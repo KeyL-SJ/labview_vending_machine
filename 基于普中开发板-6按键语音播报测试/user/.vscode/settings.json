@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "iic.h": "c",
+        "key.h": "c",
+        "reg52.h": "c"
+    }
+}

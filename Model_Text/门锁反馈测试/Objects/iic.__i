@@ -1,0 +1,1 @@
+"..\项目-基于自制核心板2\driver\iic.c" OPTIMIZE (8,SPEED) BROWSE INCDIR(..\项目-基于自制核心板2\driver) DEBUG OBJECTEXTEND PRINT(.\Listings\iic.lst) TABS (2) OBJECT(.\Objects\iic.obj)

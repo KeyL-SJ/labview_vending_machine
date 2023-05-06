@@ -1,0 +1,25 @@
+<html>
+<body>
+<pre>
+<h1>礦ision Build Log</h1>
+<h2>Project:</h2>
+D:\2022.四月文件\6.2口令触发模式V3版\6.2口令触发模式V3版\口令触发模式\Asr.uvproj
+Project File Date:  01/29/2021
+
+<h2>Output:</h2>
+compiling main.c...
+--- Error: failed to execute 'F:\keil\Keil4\C51\BIN\C51.EXE'
+Build target '目标 1'
+compiling main.c...
+--- Error: failed to execute 'F:\keil\Keil4\C51\BIN\C51.EXE'
+Target not created
+Rebuild target '目标 1'
+compiling main.c...
+--- Error: failed to execute 'F:\keil\Keil4\C51\BIN\C51.EXE'
+Target not created
+compiling main.c...
+--- Error: failed to execute 'F:\keil\Keil4\C51\BIN\C51.EXE'
+compiling main.c...
+--- Error: failed to execute 'F:\keil\Keil4\C51\BIN\C51.EXE'
+compiling main.c...
+--- Error: failed to execute 'F:\keil\Keil4\C51\BIN\C51.EXE'

@@ -1,0 +1,7 @@
+".\Objects\main.obj",
+".\Objects\Uart.obj",
+".\Objects\Timer.obj",
+".\Objects\key.obj",
+".\Objects\iic.obj" 
+TO ".\Objects\大创项目——自动售卖机" 
+PRINT(".\Listings\大创项目——自动售卖机.m51") RAMSIZE(256) 

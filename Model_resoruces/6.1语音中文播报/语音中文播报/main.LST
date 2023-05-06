@@ -1,0 +1,485 @@
+C51 COMPILER V9.57.0.0   MAIN                                                              02/15/2022 18:51:19 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: D:\keil\C51\BIN\C51.EXE main.c BROWSE INCDIR(..\语音播报教程) DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include<reg52.h>
+   2          #include <intrins.h> 
+   3          #include <stdio.h>
+   4          #include <string.h>
+   5          #include "i2c.h"
+   6          
+   7          
+   8          sbit scl=P2^1;       //I2C  时钟 
+   9          sbit sda=P2^0;       //I2C  数据 
+  10          bit ack;                 /*应答标志位*/
+  11          sbit k1=P3^1;
+  12          sbit k2=P3^0;
+  13          sbit k3=P3^2;
+  14          sbit k4=P3^3;
+  15          
+  16          void main()
+  17          {       
+  18   1              
+  19   1      
+  20   1              SetVolume(10);
+  21   1              SetReader(Reader_XiaoPing);
+  22   1              speech_text("欢迎来到桂林电子科技大学信息科技学院",GB2312);
+  23   1              while(GetChipStatus() != ChipStatus_Idle)  //等待芯片空闲
+  24   1              {
+  25   2                delay(10);
+  26   2              }
+  27   1      
+  28   1      
+  29   1      
+  30   1              SetReader(Reader_XuDuo);
+  31   1              speech_text("我尊贵的顾客请问您需要点什么呢",GB2312);
+  32   1              while(GetChipStatus() != ChipStatus_Idle)  //等待芯片空闲
+  33   1              {
+  34   2                delay(10);
+  35   2              }
+  36   1              
+  37   1      
+  38   1         while(1)
+  39   1         {
+  40   2                if(k1==0)
+  41   2                 {
+  42   3                  SetVolume(10);
+  43   3                  SetReader(Reader_XiaoPing);
+  44   3                  speech_text("一号箱门已开启请取完物品关好箱门谢谢",GB2312);
+  45   3                  while(GetChipStatus() != ChipStatus_Idle)  //等待芯片空闲
+  46   3                    {
+  47   4                      delay(10);
+  48   4                             }
+  49   3                  }
+  50   2                else if(k2==0)
+  51   2                {      SetVolume(10);
+  52   3                   SetReader(Reader_XuDuo);
+  53   3                   speech_text("二号箱门已开启请取完物品关好箱门谢谢",GB2312);
+  54   3               while(GetChipStatus() != ChipStatus_Idle)  //等待芯片空闲
+  55   3                        {
+C51 COMPILER V9.57.0.0   MAIN                                                              02/15/2022 18:51:19 PAGE 2   
+
+  56   4                        delay(10);
+  57   4                             }
+  58   3                    }
+  59   2         }
+  60   1      }
+  61          
+  62          
+  63          
+  64          /*------------------------------------------------
+  65                            延时函数
+  66          ------------------------------------------------*/
+  67          void delay(int i)
+  68          {
+  69   1        int j,k;
+  70   1        for(j=i;j>0;j--)
+  71   1          for(k=150;k>0;k--);
+  72   1      }
+  73          
+  74          
+  75          /*******************************************************************
+  76                               起动总线函数               
+  77          函数原型: void  Start_I2c();  
+  78          功能:     启动I2C总线,即发送I2C起始条件.  
+  79          ********************************************************************/
+  80          void Start_I2c()
+  81          {
+  82   1        sda=1;         /*发送起始条件的数据信号*/
+  83   1        _nop_();
+  84   1        scl=1;
+  85   1        _nop_();        /*起始条件建立时间大于4.7us,延时*/
+  86   1        _nop_();
+  87   1        _nop_();
+  88   1        _nop_();
+  89   1        _nop_();    
+  90   1        sda=0;         /*发送起始信号*/
+  91   1        _nop_();        /* 起始条件锁定时间大于4μs*/
+  92   1        _nop_();
+  93   1        _nop_();
+  94   1        _nop_();
+  95   1        _nop_();       
+  96   1        scl=0;       /*钳住I2C总线，准备发送或接收数据 */
+  97   1        _nop_();
+  98   1        _nop_();
+  99   1      }
+ 100          
+ 101          /*******************************************************************
+ 102                                结束总线函数               
+ 103          函数原型: void  Stop_I2c();  
+ 104          功能:     结束I2C总线,即发送I2C结束条件.  
+ 105          ********************************************************************/
+ 106          void Stop_I2c()
+ 107          {
+ 108   1        sda=0;      /*发送结束条件的数据信号*/
+ 109   1        _nop_();       /*发送结束条件的时钟信号*/
+ 110   1        scl=1;      /*结束条件建立时间大于4μs*/
+ 111   1        _nop_();
+ 112   1        _nop_();
+ 113   1        _nop_();
+ 114   1        _nop_();
+ 115   1        _nop_();
+ 116   1        sda=1;      /*发送I2C总线结束信号*/
+ 117   1        _nop_();
+C51 COMPILER V9.57.0.0   MAIN                                                              02/15/2022 18:51:19 PAGE 3   
+
+ 118   1        _nop_();
+ 119   1        _nop_();
+ 120   1        _nop_();
+ 121   1      }
+ 122          
+ 123          /*******************************************************************
+ 124                           字节数据发送函数               
+ 125          函数原型: void  I2C_SendByte(UCHAR c);
+ 126          功能:     将数据c发送出去,可以是地址,也可以是数据,发完后等待应答,并对
+ 127                    此状态位进行操作.(不应答或非应答都使ack=0)     
+ 128                     发送数据正常，ack=1; ack=0表示被控器无应答或损坏。
+ 129          ********************************************************************/
+ 130          void  I2C_SendByte(unsigned char  c)
+ 131          {
+ 132   1       unsigned char  i;
+ 133   1       
+ 134   1       for(i=0;i<8;i++)  /*要传送的数据长度为8位*/
+ 135   1          {
+ 136   2           if((c<<i)&0x80)sda=1;   /*判断发送位*/
+ 137   2             else  sda=0;                
+ 138   2           _nop_();
+ 139   2           scl=1;               /*置时钟线为高，通知被控器开始接收数据位*/
+ 140   2            _nop_(); 
+ 141   2            _nop_();             /*保证时钟高电平周期大于4μs*/
+ 142   2            _nop_();
+ 143   2            _nop_();
+ 144   2            _nop_();         
+ 145   2           scl=0; 
+ 146   2          }
+ 147   1          _nop_();
+ 148   1          _nop_();
+ 149   1          _nop_();
+ 150   1          _nop_();
+ 151   1          sda=1;                /*8位发送完后释放数据线，准备接收应答位*/
+ 152   1          _nop_();
+ 153   1          _nop_();
+ 154   1              _nop_();
+ 155   1              _nop_();   
+ 156   1          scl=1;
+ 157   1          _nop_();
+ 158   1          _nop_();
+ 159   1          _nop_();
+ 160   1          if(sda==1)ack=0;     
+ 161   1             else ack=1;        /*判断是否接收到应答信号*/
+ 162   1          scl=0;
+ 163   1          _nop_();
+ 164   1          _nop_();
+ 165   1      
+ 166   1      }
+ 167          
+ 168          /*******************************************************************
+ 169                           字节数据接收函数               
+ 170          函数原型: UCHAR  I2C_RcvByte();
+ 171          功能:        用来接收从器件传来的数据,并判断总线错误(不发应答信号)，
+ 172                    发完后请用应答函数应答从机。  
+ 173          ********************************************************************/    
+ 174          unsigned char I2C_RcvByte()
+ 175          {
+ 176   1        unsigned char  retc=0,i=0; 
+ 177   1        sda=1;                     /*置数据线为输入方式*/
+ 178   1        for(i=0;i<8;i++)
+ 179   1            {
+C51 COMPILER V9.57.0.0   MAIN                                                              02/15/2022 18:51:19 PAGE 4   
+
+ 180   2              _nop_();           
+ 181   2              scl=0;                  /*置时钟线为低，准备接收数据位*/
+ 182   2              _nop_();
+ 183   2              _nop_();                 /*时钟低电平周期大于4.7μs*/
+ 184   2              _nop_();
+ 185   2              _nop_();
+ 186   2              _nop_();
+ 187   2              scl=1;                  /*置时钟线为高使数据线上数据有效*/
+ 188   2              _nop_();
+ 189   2              _nop_();
+ 190   2              retc=retc<<1;
+ 191   2              if(sda==1)retc=retc+1;  /*读数据位,接收的数据位放入retc中 */
+ 192   2              _nop_();
+ 193   2              _nop_(); 
+ 194   2            } 
+ 195   1        scl=0;    
+ 196   1         _nop_();
+ 197   1        _nop_();
+ 198   1        return(retc);
+ 199   1      }
+ 200          
+ 201          /********************************************************************
+ 202                               应答子函数
+ 203          函数原型:  void Ack_I2c(bit a);
+ 204          功能:      主控器进行应答信号(可以是应答或非应答信号，由位参数a决定)
+ 205          ********************************************************************/
+ 206          void Ack_I2c(bit a)
+ 207          {  
+ 208   1        if(a==0)sda=0;              /*在此发出应答或非应答信号 */
+ 209   1        else sda=1;                             /*0为发出应答，1为非应答信号 */
+ 210   1        _nop_();
+ 211   1        _nop_();
+ 212   1        _nop_();      
+ 213   1        scl=1;
+ 214   1        _nop_();
+ 215   1        _nop_();                    /*时钟低电平周期大于4μs*/
+ 216   1        _nop_();
+ 217   1        _nop_();
+ 218   1        _nop_();  
+ 219   1        scl=0;                     /*清时钟线，住I2C总线以便继续接收*/
+ 220   1        _nop_();
+ 221   1        _nop_();    
+ 222   1      }
+ 223          
+ 224           
+ 225          bit I2C_ByteWrite(u8 dat)
+ 226          {
+ 227   1         Start_I2c();              //启动总线
+ 228   1         I2C_SendByte(I2C_ADDR);            //发送器件地址
+ 229   1         if(ack==0)return(0);
+ 230   1         I2C_SendByte(dat);            //发送数据 
+ 231   1         if(ack==0)return(0);
+ 232   1         Stop_I2c();               //结束总线
+ 233   1              delay(10);
+ 234   1         return(1);
+ 235   1      }
+ 236          
+ 237          void I2C_Writes_Bytes(u8 *buff,int number)
+ 238          {
+ 239   1              int i;
+ 240   1              for(i = 0;i < number;i++)
+ 241   1              {
+C51 COMPILER V9.57.0.0   MAIN                                                              02/15/2022 18:51:19 PAGE 5   
+
+ 242   2                      I2C_ByteWrite(buff[i]);
+ 243   2              }
+ 244   1      }
+ 245          
+ 246          
+ 247          u8 GetChipStatus()
+ 248          {
+ 249   1              u8 dat = 0xff;
+ 250   1              u8* pBuffer = 0xff;
+ 251   1              u8 AskState[4] = {0xFD,0x00,0x01,0x21};
+ 252   1      
+ 253   1              I2C_Writes_Bytes(AskState,4);
+ 254   1              delay(100);
+ 255   1      
+ 256   1              Start_I2c();                            //启动总线
+ 257   1              I2C_SendByte(I2C_ADDR+1);      //发送器件地址
+ 258   1              if(ack==0)return(0);
+ 259   1              delay(5);//必须加一点延时
+ 260   1              dat=I2C_RcvByte();          //读取数据
+ 261   1      
+ 262   1              Ack_I2c(1);           //发送非应答信号
+ 263   1              Stop_I2c();           //结束总线
+ 264   1              return(dat);  
+ 265   1      }
+ 266          
+ 267          void speech_text(u8 *str,u8 encoding_format)
+ 268          {
+ 269   1               u16 size = strlen(str) + 2;
+ 270   1               
+ 271   1               XFS_Protocol_TypeDef DataPack;
+ 272   1              
+ 273   1               DataPack.DataHead = DATAHEAD;
+ 274   1               DataPack.Length_HH = size >>8;
+ 275   1               DataPack.Length_LL = size;
+ 276   1               DataPack.Commond = 0x01;
+ 277   1               DataPack.EncodingFormat = encoding_format;
+ 278   1               DataPack.Text = str;
+ 279   1               
+ 280   1               I2C_ByteWrite(DataPack.DataHead );
+ 281   1               I2C_ByteWrite(DataPack.Length_HH);     
+ 282   1               I2C_ByteWrite(DataPack.Length_LL);
+ 283   1               I2C_ByteWrite(DataPack.Commond);       
+ 284   1               I2C_ByteWrite(DataPack.EncodingFormat);                
+ 285   1              
+ 286   1               I2C_Writes_Bytes(DataPack.Text,strlen(DataPack.Text));  
+ 287   1      }
+ 288                   
+ 289          
+ 290          void SetBase(u8 *str)
+ 291          {
+ 292   1               u16 size = strlen(str) + 2;
+ 293   1               
+ 294   1               XFS_Protocol_TypeDef DataPack;
+ 295   1              
+ 296   1               DataPack.DataHead = DATAHEAD;
+ 297   1               DataPack.Length_HH = size >>8;
+ 298   1               DataPack.Length_LL = size;
+ 299   1               DataPack.Commond = 0x01;
+ 300   1               DataPack.EncodingFormat = 0x00;
+ 301   1               DataPack.Text = str;
+ 302   1               
+ 303   1               I2C_ByteWrite(DataPack.DataHead );
+C51 COMPILER V9.57.0.0   MAIN                                                              02/15/2022 18:51:19 PAGE 6   
+
+ 304   1               I2C_ByteWrite(DataPack.Length_HH);     
+ 305   1               I2C_ByteWrite(DataPack.Length_LL);
+ 306   1               I2C_ByteWrite(DataPack.Commond);       
+ 307   1               I2C_ByteWrite(DataPack.EncodingFormat);
+ 308   1              
+ 309   1               I2C_Writes_Bytes(DataPack.Text,strlen(DataPack.Text));
+ 310   1      }
+ 311          
+ 312          void TextCtrl(char c, int d)
+ 313          {
+ 314   1        char str[10];
+ 315   1        if (d != -1)
+ 316   1          sprintf(str, "[%c%d]", c, d);
+ 317   1        else
+ 318   1          sprintf(str, "[%c]", c);
+ 319   1        SetBase(str);
+ 320   1              
+ 321   1      }
+ 322          
+ 323          void SetStyle(Style_Type style)
+ 324          {
+ 325   1        TextCtrl('f', style);
+ 326   1              while(GetChipStatus() != ChipStatus_Idle)
+ 327   1              {
+ 328   2                delay(10);
+ 329   2              }
+ 330   1      }
+ 331          
+ 332          void SetLanguage(Language_Type language)
+ 333          {
+ 334   1                TextCtrl('g', language);
+ 335   1               while(GetChipStatus() != ChipStatus_Idle)
+ 336   1              {
+ 337   2                delay(10);
+ 338   2              }
+ 339   1      }
+ 340          
+ 341          void SetArticulation(Articulation_Type articulation)
+ 342          {
+ 343   1        TextCtrl('h', articulation);
+ 344   1              while(GetChipStatus() != ChipStatus_Idle)
+ 345   1              {
+ 346   2                delay(10);
+ 347   2              }
+ 348   1      }
+ 349          
+ 350          void SetSpell(Spell_Type spell)
+ 351          {
+ 352   1        TextCtrl('i', spell);
+ 353   1              while(GetChipStatus() != ChipStatus_Idle)
+ 354   1              {
+ 355   2                delay(10);
+ 356   2              }
+ 357   1      }
+ 358          
+ 359          void SetReader(Reader_Type reader)
+ 360          {
+ 361   1        TextCtrl('m', reader);
+ 362   1              while(GetChipStatus() != ChipStatus_Idle)
+ 363   1              {
+ 364   2                delay(10);
+ 365   2              }
+C51 COMPILER V9.57.0.0   MAIN                                                              02/15/2022 18:51:19 PAGE 7   
+
+ 366   1      }
+ 367          
+ 368          void SetNumberHandle(NumberHandle_Type numberHandle)
+ 369          {
+ 370   1        TextCtrl('n', numberHandle);
+ 371   1              while(GetChipStatus() != ChipStatus_Idle)
+ 372   1              {
+ 373   2                delay(10);
+ 374   2              }
+ 375   1      }
+ 376          
+ 377          void SetZeroPronunciation(ZeroPronunciation_Type zeroPronunciation)
+ 378          {
+ 379   1        TextCtrl('o', zeroPronunciation);
+ 380   1              while(GetChipStatus() != ChipStatus_Idle)
+ 381   1              {
+ 382   2                delay(10);
+ 383   2              }
+ 384   1      }
+ 385          
+ 386          
+ 387          
+ 388          void SetNamePronunciation(NamePronunciation_Type namePronunciation)
+ 389          {
+ 390   1        TextCtrl('r', namePronunciation);
+ 391   1              while(GetChipStatus() != ChipStatus_Idle)
+ 392   1              {
+ 393   2                delay(10);
+ 394   2              }
+ 395   1      }
+ 396          
+ 397          void SetSpeed(int speed)
+ 398          {
+ 399   1        TextCtrl('s', speed);
+ 400   1      }
+ 401          
+ 402          void SetIntonation(int intonation)
+ 403          {
+ 404   1        TextCtrl('t', intonation);
+ 405   1              while(GetChipStatus() != ChipStatus_Idle)
+ 406   1              {
+ 407   2                delay(10);
+ 408   2              }
+ 409   1      }
+ 410          
+ 411          void SetVolume(int volume)
+ 412          {
+ 413   1        TextCtrl('v', volume);
+ 414   1              while(GetChipStatus() != ChipStatus_Idle)
+ 415   1              {
+ 416   2                delay(10);
+ 417   2              }
+ 418   1      }
+ 419          
+ 420          void SetOnePronunciation(OnePronunciation_Type onePronunciation)
+ 421          {
+ 422   1        TextCtrl('y', onePronunciation);
+ 423   1              while(GetChipStatus() != ChipStatus_Idle)
+ 424   1              {
+ 425   2                delay(10);
+ 426   2              }
+ 427   1      }
+C51 COMPILER V9.57.0.0   MAIN                                                              02/15/2022 18:51:19 PAGE 8   
+
+ 428          
+ 429          void SetRhythm(Rhythm_Type rhythm)
+ 430          {
+ 431   1        TextCtrl('z', rhythm);
+ 432   1              while(GetChipStatus() != ChipStatus_Idle)
+ 433   1              {
+ 434   2                delay(10);
+ 435   2              }
+ 436   1      }
+ 437          
+ 438          void SetRestoreDefault()
+ 439          {
+ 440   1        TextCtrl('d', -1);
+ 441   1              while(GetChipStatus() != ChipStatus_Idle)
+ 442   1              {
+ 443   2                delay(10);
+ 444   2              }
+ 445   1      }
+ 446          
+ 447          
+ 448          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1050    ----
+   CONSTANT SIZE    =    158    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      49
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

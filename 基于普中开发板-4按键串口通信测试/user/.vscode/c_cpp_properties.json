@@ -1,0 +1,39 @@
+{
+    "configurations": [
+        {
+            "name": "Target 1",
+            "includePath": [
+                "d:\\Keil\\KeilProject\\大创项目—自动售卖机\\项目-基于普中开发板\\sys",
+                "d:\\Keil\\KeilProject\\大创项目—自动售卖机\\项目-基于普中开发板\\driver",
+                "D:\\Keil\\C51\\INC",
+                "d:\\Keil\\KeilProject\\大创项目—自动售卖机\\项目-基于普中开发板\\user"
+            ],
+            "defines": [
+                "__C51__",
+                "__VSCODE_C51__",
+                "reentrant=",
+                "compact=",
+                "small=",
+                "large=",
+                "data=",
+                "idata=",
+                "pdata=",
+                "bdata=",
+                "xdata=",
+                "code=",
+                "bit=char",
+                "sbit=char",
+                "sfr=char",
+                "sfr16=int",
+                "sfr32=int",
+                "interrupt=",
+                "using=",
+                "_at_=",
+                "_priority_=",
+                "_task_="
+            ],
+            "intelliSenseMode": "${default}"
+        }
+    ],
+    "version": 4
+}

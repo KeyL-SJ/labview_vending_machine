@@ -1,0 +1,59 @@
+C51 COMPILER V9.54   MAIN                                                                  05/06/2022 12:20:22 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Driver) DEBUG OBJECTEXTEND PRINT(
+                    -.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <iic.h>
+   2          
+   3          sbit k1 = P3 ^ 1;
+   4          sbit k2 = P3 ^ 0;
+   5          sbit k3 = P3 ^ 2;
+   6          sbit k4 = P3 ^ 3;
+   7          
+   8          void main()
+   9          {
+  10   1        speech_init();
+  11   1        
+  12   1        while (1)
+  13   1        {
+  14   2          if (k1 == 0)
+  15   2          {
+  16   3            SetVolume(10);
+  17   3            SetReader(Reader_XiaoPing);
+  18   3            speech_text("一号箱门已开启请取完物品关好箱门谢谢", GB2312);
+  19   3            while (GetChipStatus() != ChipStatus_Idle) //等待芯片空闲
+  20   3            {
+  21   4              delay(10);
+  22   4            }
+  23   3          }
+  24   2          else if (k2 == 0)
+  25   2          {
+  26   3            SetVolume(10);
+  27   3            SetReader(Reader_XuDuo);
+  28   3            speech_text("二号箱门已开启请取完物品关好箱门谢谢", GB2312);
+  29   3            while (GetChipStatus() != ChipStatus_Idle) //等待芯片空闲
+  30   3            {
+  31   4              delay(10);
+  32   4            }
+  33   3          }
+  34   2        }
+  35   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     89    ----
+   CONSTANT SIZE    =     74    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

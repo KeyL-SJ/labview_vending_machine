@@ -1,0 +1,83 @@
+C51 COMPILER V9.54   KEY                                                                   04/16/2022 21:49:31 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE KEY
+OBJECT MODULE PLACED IN .\Objects\key.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\driver\key.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\sys;..\driver) DEBUG OBJ
+                    -ECTEXTEND PRINT(.\Listings\key.lst) TABS(2) OBJECT(.\Objects\key.obj)
+
+line level    source
+
+   1          #include <key.h>
+   2          #define GPIO_DIG P0
+   3          #define GPIO_KEY P1
+   4          
+   5          
+   6          void key_delay(unsigned int i)
+   7          {
+   8   1        while(i--); 
+   9   1      }
+  10          
+  11          /*******************************************************************************
+  12          * 函 数 名         : Key_Read_KBD
+  13          * 函数功能       : 检测矩阵按键按下情况
+  14          * 输    入         : 无
+  15          * 输    出         : 按下的按键的键值
+  16          *******************************************************************************/
+  17          unsigned char Key_Read_KBD(void)
+  18          {
+  19   1        unsigned char Key_Value;
+  20   1        char a=0;
+  21   1        GPIO_KEY=0x0f;
+  22   1          if(GPIO_KEY!=0x0f)//再次检测键盘是否按下
+  23   1          { 
+  24   2            //测试列
+  25   2            GPIO_KEY=0X0F;
+  26   2            switch(GPIO_KEY)
+  27   2            {
+  28   3              case(0X07): Key_Value=1;break;
+  29   3              case(0X0b): Key_Value=2;break;
+  30   3              case(0X0d): Key_Value=3;break;
+  31   3              case(0X0e): Key_Value=4;break;
+  32   3            }
+  33   2            //测试行
+  34   2            GPIO_KEY=0XF0;
+  35   2            switch(GPIO_KEY)
+  36   2            {
+  37   3              case(0X70): Key_Value=Key_Value;break;
+  38   3              case(0Xb0): Key_Value=Key_Value+4;break;
+  39   3              case(0Xd0): Key_Value=Key_Value+8;break;
+  40   3              case(0Xe0): Key_Value=Key_Value+12;break;
+  41   3            }
+  42   2        }
+  43   1      
+  44   1        return Key_Value;
+  45   1      }
+  46          
+  47          unsigned char Key_Read_BTN(void)
+  48          {
+  49   1        unsigned char Key_Value;
+  50   1        if(Key1 == 0) Key_Value = 1;
+  51   1        else if(Key2 == 0) Key_Value = 2;
+  52   1        else if(Key3 == 0) Key_Value = 3;
+  53   1        else if(Key4 == 0) Key_Value = 4;
+  54   1        else Key_Value = 0;
+C51 COMPILER V9.54   KEY                                                                   04/16/2022 21:49:31 PAGE 2   
+
+  55   1        
+  56   1        return Key_Value;
+  57   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    137    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

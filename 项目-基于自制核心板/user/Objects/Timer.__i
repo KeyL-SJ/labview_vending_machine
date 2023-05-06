@@ -1,0 +1,1 @@
+"..\sys\Timer.c" OPTIMIZE (8,SPEED) BROWSE INCDIR(..\sys;..\driver) DEBUG OBJECTEXTEND PRINT(.\Listings\Timer.lst) TABS (2) OBJECT(.\Objects\Timer.obj)

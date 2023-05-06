@@ -1,0 +1,4 @@
+".\Objects\main.obj",
+".\Objects\key.obj" 
+TO ".\Objects\lock_Text" 
+PRINT(".\Listings\lock_Text.m51") RAMSIZE(256) 

@@ -1,0 +1,458 @@
+C51 COMPILER V9.54   IIC                                                                   04/20/2022 12:31:35 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE IIC
+OBJECT MODULE PLACED IN .\Objects\iic.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\ÏîÄ¿-»ùÓÚ×ÔÖÆºËÐÄ°å2\driver\iic.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\ÏîÄ
+                    -¿-»ùÓÚ×ÔÖÆºËÐÄ°å2\driver) DEBUG OBJECTEXTEND PRINT(.\Listings\iic.lst) TABS(2) OBJECT(.\Objects\iic.obj)
+
+line level    source
+
+   1          #include <iic.h>
+   2          
+   3          sbit scl = P2 ^ 1; //I2C  Ê±ÖÓ
+   4          sbit sda = P2 ^ 0; //I2C  Êý¾Ý
+   5          bit ack;           /*Ó¦´ð±êÖ¾Î»*/
+   6          
+   7          /*------------------------------------------------
+   8                            ÑÓÊ±º¯Êý
+   9          ------------------------------------------------*/
+  10          void delay(int i)
+  11          {
+  12   1        int j, k;
+  13   1        for (j = i; j > 0; j--)
+  14   1          for (k = 150; k > 0; k--)
+  15   1            ;
+  16   1      }
+  17          
+  18          /*******************************************************************
+  19                               Æð¶¯×ÜÏßº¯Êý               
+  20          º¯ÊýÔ­ÐÍ: void  Start_I2c();  
+  21          ¹¦ÄÜ:     Æô¶¯I2C×ÜÏß,¼´·¢ËÍI2CÆðÊ¼Ìõ¼þ.  
+  22          ********************************************************************/
+  23          void Start_I2c()
+  24          {
+  25   1        sda = 1; /*·¢ËÍÆðÊ¼Ìõ¼þµÄÊý¾ÝÐÅºÅ*/
+  26   1        _nop_();
+  27   1        scl = 1;
+  28   1        _nop_(); /*ÆðÊ¼Ìõ¼þ½¨Á¢Ê±¼ä´óÓÚ4.7us,ÑÓÊ±*/
+  29   1        _nop_();
+  30   1        _nop_();
+  31   1        _nop_();
+  32   1        _nop_();
+  33   1        sda = 0; /*·¢ËÍÆðÊ¼ÐÅºÅ*/
+  34   1        _nop_(); /* ÆðÊ¼Ìõ¼þËø¶¨Ê±¼ä´óÓÚ4¦Ìs*/
+  35   1        _nop_();
+  36   1        _nop_();
+  37   1        _nop_();
+  38   1        _nop_();
+  39   1        scl = 0; /*Ç¯×¡I2C×ÜÏß£¬×¼±¸·¢ËÍ»ò½ÓÊÕÊý¾Ý */
+  40   1        _nop_();
+  41   1        _nop_();
+  42   1      }
+  43          
+  44          /*******************************************************************
+  45                                ½áÊø×ÜÏßº¯Êý               
+  46          º¯ÊýÔ­ÐÍ: void  Stop_I2c();  
+  47          ¹¦ÄÜ:     ½áÊøI2C×ÜÏß,¼´·¢ËÍI2C½áÊøÌõ¼þ.  
+  48          ********************************************************************/
+  49          void Stop_I2c()
+  50          {
+  51   1        sda = 0; /*·¢ËÍ½áÊøÌõ¼þµÄÊý¾ÝÐÅºÅ*/
+  52   1        _nop_(); /*·¢ËÍ½áÊøÌõ¼þµÄÊ±ÖÓÐÅºÅ*/
+  53   1        scl = 1; /*½áÊøÌõ¼þ½¨Á¢Ê±¼ä´óÓÚ4¦Ìs*/
+  54   1        _nop_();
+C51 COMPILER V9.54   IIC                                                                   04/20/2022 12:31:35 PAGE 2   
+
+  55   1        _nop_();
+  56   1        _nop_();
+  57   1        _nop_();
+  58   1        _nop_();
+  59   1        sda = 1; /*·¢ËÍI2C×ÜÏß½áÊøÐÅºÅ*/
+  60   1        _nop_();
+  61   1        _nop_();
+  62   1        _nop_();
+  63   1        _nop_();
+  64   1      }
+  65          
+  66          /*******************************************************************
+  67                           ×Ö½ÚÊý¾Ý·¢ËÍº¯Êý               
+  68          º¯ÊýÔ­ÐÍ: void  I2C_SendByte(UCHAR c);
+  69          ¹¦ÄÜ:     ½«Êý¾Ýc·¢ËÍ³öÈ¥,¿ÉÒÔÊÇµØÖ·,Ò²¿ÉÒÔÊÇÊý¾Ý,·¢ÍêºóµÈ´ýÓ¦´ð,²¢¶Ô
+  70                    ´Ë×´Ì¬Î»½øÐÐ²Ù×÷.(²»Ó¦´ð»ò·ÇÓ¦´ð¶¼Ê¹ack=0)     
+  71                     ·¢ËÍÊý¾ÝÕý³££¬ack=1; ack=0±íÊ¾±»¿ØÆ÷ÎÞÓ¦´ð»òËð»µ¡£
+  72          ********************************************************************/
+  73          void I2C_SendByte(unsigned char c)
+  74          {
+  75   1        unsigned char i;
+  76   1      
+  77   1        for (i = 0; i < 8; i++) /*Òª´«ËÍµÄÊý¾Ý³¤¶ÈÎª8Î»*/
+  78   1        {
+  79   2          if ((c << i) & 0x80)
+  80   2            sda = 1; /*ÅÐ¶Ï·¢ËÍÎ»*/
+  81   2          else
+  82   2            sda = 0;
+  83   2          _nop_();
+  84   2          scl = 1; /*ÖÃÊ±ÖÓÏßÎª¸ß£¬Í¨Öª±»¿ØÆ÷¿ªÊ¼½ÓÊÕÊý¾ÝÎ»*/
+  85   2          _nop_();
+  86   2          _nop_(); /*±£Ö¤Ê±ÖÓ¸ßµçÆ½ÖÜÆÚ´óÓÚ4¦Ìs*/
+  87   2          _nop_();
+  88   2          _nop_();
+  89   2          _nop_();
+  90   2          scl = 0;
+  91   2        }
+  92   1        _nop_();
+  93   1        _nop_();
+  94   1        _nop_();
+  95   1        _nop_();
+  96   1        sda = 1; /*8Î»·¢ËÍÍêºóÊÍ·ÅÊý¾ÝÏß£¬×¼±¸½ÓÊÕÓ¦´ðÎ»*/
+  97   1        _nop_();
+  98   1        _nop_();
+  99   1        _nop_();
+ 100   1        _nop_();
+ 101   1        scl = 1;
+ 102   1        _nop_();
+ 103   1        _nop_();
+ 104   1        _nop_();
+ 105   1        if (sda == 1)
+ 106   1          ack = 0;
+ 107   1        else
+ 108   1          ack = 1; /*ÅÐ¶ÏÊÇ·ñ½ÓÊÕµ½Ó¦´ðÐÅºÅ*/
+ 109   1        scl = 0;
+ 110   1        _nop_();
+ 111   1        _nop_();
+ 112   1      }
+ 113          
+ 114          /*******************************************************************
+ 115                           ×Ö½ÚÊý¾Ý½ÓÊÕº¯Êý               
+ 116          º¯ÊýÔ­ÐÍ: UCHAR  I2C_RcvByte();
+C51 COMPILER V9.54   IIC                                                                   04/20/2022 12:31:35 PAGE 3   
+
+ 117          ¹¦ÄÜ:        ÓÃÀ´½ÓÊÕ´ÓÆ÷¼þ´«À´µÄÊý¾Ý,²¢ÅÐ¶Ï×ÜÏß´íÎó(²»·¢Ó¦´ðÐÅºÅ)£¬
+ 118                    ·¢ÍêºóÇëÓÃÓ¦´ðº¯ÊýÓ¦´ð´Ó»ú¡£  
+ 119          ********************************************************************/
+ 120          unsigned char I2C_RcvByte()
+ 121          {
+ 122   1        unsigned char retc = 0, i = 0;
+ 123   1        sda = 1; /*ÖÃÊý¾ÝÏßÎªÊäÈë·½Ê½*/
+ 124   1        for (i = 0; i < 8; i++)
+ 125   1        {
+ 126   2          _nop_();
+ 127   2          scl = 0; /*ÖÃÊ±ÖÓÏßÎªµÍ£¬×¼±¸½ÓÊÕÊý¾ÝÎ»*/
+ 128   2          _nop_();
+ 129   2          _nop_(); /*Ê±ÖÓµÍµçÆ½ÖÜÆÚ´óÓÚ4.7¦Ìs*/
+ 130   2          _nop_();
+ 131   2          _nop_();
+ 132   2          _nop_();
+ 133   2          scl = 1; /*ÖÃÊ±ÖÓÏßÎª¸ßÊ¹Êý¾ÝÏßÉÏÊý¾ÝÓÐÐ§*/
+ 134   2          _nop_();
+ 135   2          _nop_();
+ 136   2          retc = retc << 1;
+ 137   2          if (sda == 1)
+ 138   2            retc = retc + 1; /*¶ÁÊý¾ÝÎ»,½ÓÊÕµÄÊý¾ÝÎ»·ÅÈëretcÖÐ */
+ 139   2          _nop_();
+ 140   2          _nop_();
+ 141   2        }
+ 142   1        scl = 0;
+ 143   1        _nop_();
+ 144   1        _nop_();
+ 145   1        return (retc);
+ 146   1      }
+ 147          
+ 148          /********************************************************************
+ 149                               Ó¦´ð×Óº¯Êý
+ 150          º¯ÊýÔ­ÐÍ:  void Ack_I2c(bit a);
+ 151          ¹¦ÄÜ:      Ö÷¿ØÆ÷½øÐÐÓ¦´ðÐÅºÅ(¿ÉÒÔÊÇÓ¦´ð»ò·ÇÓ¦´ðÐÅºÅ£¬ÓÉÎ»²ÎÊýa¾ö¶¨)
+ 152          ********************************************************************/
+ 153          void Ack_I2c(bit a)
+ 154          {
+ 155   1        if (a == 0)
+ 156   1          sda = 0; /*ÔÚ´Ë·¢³öÓ¦´ð»ò·ÇÓ¦´ðÐÅºÅ */
+ 157   1        else
+ 158   1          sda = 1; /*0Îª·¢³öÓ¦´ð£¬1Îª·ÇÓ¦´ðÐÅºÅ */
+ 159   1        _nop_();
+ 160   1        _nop_();
+ 161   1        _nop_();
+ 162   1        scl = 1;
+ 163   1        _nop_();
+ 164   1        _nop_(); /*Ê±ÖÓµÍµçÆ½ÖÜÆÚ´óÓÚ4¦Ìs*/
+ 165   1        _nop_();
+ 166   1        _nop_();
+ 167   1        _nop_();
+ 168   1        scl = 0; /*ÇåÊ±ÖÓÏß£¬×¡I2C×ÜÏßÒÔ±ã¼ÌÐø½ÓÊÕ*/
+ 169   1        _nop_();
+ 170   1        _nop_();
+ 171   1      }
+ 172          
+ 173          bit I2C_ByteWrite(unsigned char dat)
+ 174          {
+ 175   1        Start_I2c();            //Æô¶¯×ÜÏß
+ 176   1        I2C_SendByte(I2C_ADDR); //·¢ËÍÆ÷¼þµØÖ·
+ 177   1        if (ack == 0)
+ 178   1          return (0);
+C51 COMPILER V9.54   IIC                                                                   04/20/2022 12:31:35 PAGE 4   
+
+ 179   1        I2C_SendByte(dat); //·¢ËÍÊý¾Ý
+ 180   1        if (ack == 0)
+ 181   1          return (0);
+ 182   1        Stop_I2c(); //½áÊø×ÜÏß
+ 183   1        delay(10);
+ 184   1        return (1);
+ 185   1      }
+ 186          
+ 187          void I2C_Writes_Bytes(unsigned char *buff, int number)
+ 188          {
+ 189   1        int i;
+ 190   1        for (i = 0; i < number; i++)
+ 191   1        {
+ 192   2          I2C_ByteWrite(buff[i]);
+ 193   2        }
+ 194   1      }
+ 195          
+ 196          unsigned char GetChipStatus()
+ 197          {
+ 198   1        unsigned char dat = 0xff;
+ 199   1        unsigned char *pBuffer = 0xff;
+ 200   1        unsigned char AskState[4] = {0xFD, 0x00, 0x01, 0x21};
+ 201   1      
+ 202   1        I2C_Writes_Bytes(AskState, 4);
+ 203   1        delay(100);
+ 204   1      
+ 205   1        Start_I2c();                //Æô¶¯×ÜÏß
+ 206   1        I2C_SendByte(I2C_ADDR + 1); //·¢ËÍÆ÷¼þµØÖ·
+ 207   1        if (ack == 0)
+ 208   1          return (0);
+ 209   1        delay(5);            //±ØÐë¼ÓÒ»µãÑÓÊ±
+ 210   1        dat = I2C_RcvByte(); //¶ÁÈ¡Êý¾Ý
+ 211   1      
+ 212   1        Ack_I2c(1); //·¢ËÍ·ÇÓ¦´ðÐÅºÅ
+ 213   1        Stop_I2c(); //½áÊø×ÜÏß
+ 214   1        return (dat);
+ 215   1      }
+ 216          
+ 217          void speech_text(u8 *str, u8 encoding_format)
+ 218          {
+ 219   1        u16 size = strlen(str) + 2;
+ 220   1      
+ 221   1        XFS_Protocol_TypeDef DataPack;
+ 222   1      
+ 223   1        DataPack.DataHead = DATAHEAD;
+ 224   1        DataPack.Length_HH = size >> 8;
+ 225   1        DataPack.Length_LL = size;
+ 226   1        DataPack.Commond = 0x01;
+ 227   1        DataPack.EncodingFormat = encoding_format;
+ 228   1        DataPack.Text = str;
+ 229   1      
+ 230   1        I2C_ByteWrite(DataPack.DataHead);
+ 231   1        I2C_ByteWrite(DataPack.Length_HH);
+ 232   1        I2C_ByteWrite(DataPack.Length_LL);
+ 233   1        I2C_ByteWrite(DataPack.Commond);
+ 234   1        I2C_ByteWrite(DataPack.EncodingFormat);
+ 235   1      
+ 236   1        I2C_Writes_Bytes(DataPack.Text, strlen(DataPack.Text));
+ 237   1      }
+ 238          
+ 239          void SetBase(u8 *str)
+ 240          {
+C51 COMPILER V9.54   IIC                                                                   04/20/2022 12:31:35 PAGE 5   
+
+ 241   1        u16 size = strlen(str) + 2;
+ 242   1      
+ 243   1        XFS_Protocol_TypeDef DataPack;
+ 244   1      
+ 245   1        DataPack.DataHead = DATAHEAD;
+ 246   1        DataPack.Length_HH = size >> 8;
+ 247   1        DataPack.Length_LL = size;
+ 248   1        DataPack.Commond = 0x01;
+ 249   1        DataPack.EncodingFormat = 0x00;
+ 250   1        DataPack.Text = str;
+ 251   1      
+ 252   1        I2C_ByteWrite(DataPack.DataHead);
+ 253   1        I2C_ByteWrite(DataPack.Length_HH);
+ 254   1        I2C_ByteWrite(DataPack.Length_LL);
+ 255   1        I2C_ByteWrite(DataPack.Commond);
+ 256   1        I2C_ByteWrite(DataPack.EncodingFormat);
+ 257   1      
+ 258   1        I2C_Writes_Bytes(DataPack.Text, strlen(DataPack.Text));
+ 259   1      }
+ 260          
+ 261          void TextCtrl(char c, int d)
+ 262          {
+ 263   1        char str[10];
+ 264   1        if (d != -1)
+ 265   1          sprintf(str, "[%c%d]", c, d);
+ 266   1        else
+ 267   1          sprintf(str, "[%c]", c);
+ 268   1        SetBase(str);
+ 269   1      }
+ 270          
+ 271          void SetStyle(Style_Type style)
+ 272          {
+ 273   1        TextCtrl('f', style);
+ 274   1        while (GetChipStatus() != ChipStatus_Idle)
+ 275   1        {
+ 276   2          delay(10);
+ 277   2        }
+ 278   1      }
+ 279          
+ 280          void SetLanguage(Language_Type language)
+ 281          {
+ 282   1        TextCtrl('g', language);
+ 283   1        while (GetChipStatus() != ChipStatus_Idle)
+ 284   1        {
+ 285   2          delay(10);
+ 286   2        }
+ 287   1      }
+ 288          
+ 289          void SetArticulation(Articulation_Type articulation)
+ 290          {
+ 291   1        TextCtrl('h', articulation);
+ 292   1        while (GetChipStatus() != ChipStatus_Idle)
+ 293   1        {
+ 294   2          delay(10);
+ 295   2        }
+ 296   1      }
+ 297          
+ 298          void SetSpell(Spell_Type spell)
+ 299          {
+ 300   1        TextCtrl('i', spell);
+ 301   1        while (GetChipStatus() != ChipStatus_Idle)
+ 302   1        {
+C51 COMPILER V9.54   IIC                                                                   04/20/2022 12:31:35 PAGE 6   
+
+ 303   2          delay(10);
+ 304   2        }
+ 305   1      }
+ 306          
+ 307          void SetReader(Reader_Type reader)
+ 308          {
+ 309   1        TextCtrl('m', reader);
+ 310   1        while (GetChipStatus() != ChipStatus_Idle)
+ 311   1        {
+ 312   2          delay(10);
+ 313   2        }
+ 314   1      }
+ 315          
+ 316          void SetNumberHandle(NumberHandle_Type numberHandle)
+ 317          {
+ 318   1        TextCtrl('n', numberHandle);
+ 319   1        while (GetChipStatus() != ChipStatus_Idle)
+ 320   1        {
+ 321   2          delay(10);
+ 322   2        }
+ 323   1      }
+ 324          
+ 325          void SetZeroPronunciation(ZeroPronunciation_Type zeroPronunciation)
+ 326          {
+ 327   1        TextCtrl('o', zeroPronunciation);
+ 328   1        while (GetChipStatus() != ChipStatus_Idle)
+ 329   1        {
+ 330   2          delay(10);
+ 331   2        }
+ 332   1      }
+ 333          
+ 334          void SetNamePronunciation(NamePronunciation_Type namePronunciation)
+ 335          {
+ 336   1        TextCtrl('r', namePronunciation);
+ 337   1        while (GetChipStatus() != ChipStatus_Idle)
+ 338   1        {
+ 339   2          delay(10);
+ 340   2        }
+ 341   1      }
+ 342          
+ 343          void SetSpeed(int speed)
+ 344          {
+ 345   1        TextCtrl('s', speed);
+ 346   1      }
+ 347          
+ 348          void SetIntonation(int intonation)
+ 349          {
+ 350   1        TextCtrl('t', intonation);
+ 351   1        while (GetChipStatus() != ChipStatus_Idle)
+ 352   1        {
+ 353   2          delay(10);
+ 354   2        }
+ 355   1      }
+ 356          
+ 357          void SetVolume(int volume)
+ 358          {
+ 359   1        TextCtrl('v', volume);
+ 360   1        while (GetChipStatus() != ChipStatus_Idle)
+ 361   1        {
+ 362   2          delay(10);
+ 363   2        }
+ 364   1      }
+C51 COMPILER V9.54   IIC                                                                   04/20/2022 12:31:35 PAGE 7   
+
+ 365          
+ 366          void SetOnePronunciation(OnePronunciation_Type onePronunciation)
+ 367          {
+ 368   1        TextCtrl('y', onePronunciation);
+ 369   1        while (GetChipStatus() != ChipStatus_Idle)
+ 370   1        {
+ 371   2          delay(10);
+ 372   2        }
+ 373   1      }
+ 374          
+ 375          void SetRhythm(Rhythm_Type rhythm)
+ 376          {
+ 377   1        TextCtrl('z', rhythm);
+ 378   1        while (GetChipStatus() != ChipStatus_Idle)
+ 379   1        {
+ 380   2          delay(10);
+ 381   2        }
+ 382   1      }
+ 383          
+ 384          void SetRestoreDefault()
+ 385          {
+ 386   1        TextCtrl('d', -1);
+ 387   1        while (GetChipStatus() != ChipStatus_Idle)
+ 388   1        {
+ 389   2          delay(10);
+ 390   2        }
+ 391   1      }
+ 392          
+ 393          void speech_init(void)
+ 394          {
+ 395   1        // SetVolume(10);
+ 396   1        // SetReader(Reader_XiaoPing);
+ 397   1        // speech_text("»¶Ó­À´µ½¹ðÁÖµç×Ó¿Æ¼¼´óÑ§ÐÅÏ¢¿Æ¼¼Ñ§Ôº", GB2312);
+ 398   1        // while (GetChipStatus() != ChipStatus_Idle) //µÈ´ýÐ¾Æ¬¿ÕÏÐ
+ 399   1        // {
+ 400   1        //   delay(10);
+ 401   1        // }
+ 402   1      
+ 403   1        SetReader(Reader_XuDuo);
+ 404   1        speech_text("ÇëÎÊÄúÐèÒªµãÊ²Ã´ÄØ", GB2312);
+ 405   1        while (GetChipStatus() != ChipStatus_Idle) //µÈ´ýÐ¾Æ¬¿ÕÏÐ
+ 406   1        {
+ 407   2          delay(10);
+ 408   2        }
+ 409   1      }
+ 410          
+ 411          void User_Speech_Text(unsigned char *text)
+ 412          {
+ 413   1        SetVolume(10);
+ 414   1        SetReader(Reader_XuDuo);
+ 415   1        speech_text(text, GB2312);
+ 416   1        while (GetChipStatus() != ChipStatus_Idle) //µÈ´ýÐ¾Æ¬¿ÕÏÐ
+ 417   1        {
+ 418   2          delay(10);
+ 419   2        }
+ 420   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    992    ----
+   CONSTANT SIZE    =     35    ----
+   XDATA SIZE       =   ----    ----
+C51 COMPILER V9.54   IIC                                                                   04/20/2022 12:31:35 PAGE 8   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      52
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

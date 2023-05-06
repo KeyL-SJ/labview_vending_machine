@@ -1,0 +1,1 @@
+"..\sys\Uart.c" OPTIMIZE (8,SPEED) BROWSE INCDIR(..\sys;..\driver) DEBUG OBJECTEXTEND PRINT(.\Listings\Uart.lst) TABS (2) OBJECT(.\Objects\Uart.obj)

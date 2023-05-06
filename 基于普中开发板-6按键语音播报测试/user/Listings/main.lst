@@ -1,0 +1,79 @@
+C51 COMPILER V9.54   MAIN                                                                  05/06/2022 12:21:12 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\sys;..\driver) DEBUG OBJECTEXTEND
+                    - PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include <Uart.h>
+   3          #include <key.h>
+   4          #include <iic.h>
+   5          sbit led3 = P2^2;
+   6          sbit led4 = P2^3;
+   7          sbit led5 = P2^4;
+   8          sbit led6 = P2^5;
+   9          void Recognition_Pros(void);
+  10          
+  11          unsigned char recognition_result = 0xff;
+  12          
+  13          
+  14          void main(void)
+  15          {
+  16   1        speech_init();
+  17   1        Recognition_Init();
+  18   1        
+  19   1        while (1)
+  20   1        {
+  21   2          Recognition_Pros();
+  22   2        }
+  23   1      }
+  24          
+  25          void Recognition_Pros(void)
+  26          {
+  27   1        recognition_result = I2C_BufferRead(ASR_RESULT);
+  28   1        switch(recognition_result)
+  29   1        {
+  30   2          case 0://小亚
+  31   2            User_Speech_Text("有什么可以帮您");
+  32   2            break;
+  33   2          case 1://一号门
+  34   2            User_Speech_Text("您选择了一号商品");
+  35   2            break;
+  36   2          case 2:
+  37   2            User_Speech_Text("您选择了二号商品");
+  38   2            break;
+  39   2          case 3:
+  40   2            User_Speech_Text("您选择了叁号商品");
+  41   2            break;
+  42   2          case 4:
+  43   2            User_Speech_Text("您选择了四号商品");
+  44   2            break;
+  45   2          case 5:
+  46   2            User_Speech_Text("您选择了五号商品");
+  47   2            break;
+  48   2          case 6:
+  49   2            User_Speech_Text("您选择了六号商品");
+  50   2            break;
+  51   2        }
+  52   1        delay(500);
+  53   1      }
+
+C51 COMPILER V9.54   MAIN                                                                  05/06/2022 12:21:12 PAGE 2   
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    117    ----
+   CONSTANT SIZE    =    117    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,4 @@
+".\Objects\iic.obj",
+".\Objects\main.obj" 
+TO ".\Objects\speech_demo" 
+PRINT(".\Listings\speech_demo.m51")

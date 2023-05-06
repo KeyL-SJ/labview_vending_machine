@@ -1,0 +1,428 @@
+C51 COMPILER V9.00   MAIN                                                                  02/01/2021 09:50:58 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE main.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include<reg52.h>
+   2          #include <intrins.h> 
+   3          #include <stdio.h>
+   4          #include <string.h>
+   5          
+   6          #define I2C_ADDR                    0x1e   //ÓïÒôÊ¶±ðÄ£¿éµØÖ·£¬Ä£¿éµØÖ·Îª0x0fÓÉÓÚ×îÓÒ¶ËÎª¶ÁÐ´Î»£¬ËùÒÔÐèÒª×
+             -óÒÆÒÔÎªÎª0x1e
+   7          
+   8          #define ASR_ADD_WORD_ADDR           0x01   //´ÊÌõÌí¼ÓµØÖ·
+   9          
+  10          #define ASR_MODE_ADDR               0x02   //Ê¶±ðÄ£Ê½ÉèÖÃµØÖ·£¬ÖµÎª0-2£¬0:Ñ­»·Ê¶±ðÄ£Ê½ 1:¿ÚÁîÄ£Ê½ ,2:°´¼üÄ
+             -£Ê½£¬Ä¬ÈÏÎªÑ­»·¼ì²â
+  11          
+  12          #define ASR_RGB_ADDR                0x03   //RGBµÆÉèÖÃµØÖ·,ÐèÒª·¢Á½Î»£¬µÚÒ»¸öÖ±½ÓÎªµÆºÅ1£ºÀ¶ 2:ºì 3£ºÂÌ ,
+  13                                                     //µÚ¶þ¸ö×Ö½ÚÎªÁÁ¶È0-255£¬ÊýÖµÔ½´óÁÁ¶ÈÔ½¸ß
+  14                                                     
+  15          #define ASR_REC_GAIN                0x04   //Ê¶±ðÁéÃô¶ÈÉèÖÃµØÖ·£¬ÁéÃô¶È¿ÉÉèÖÃÎª0x00-0x7f,ÖµÔ½¸ßÔ½ÈÝÒ×¼ì²âµ
+             -«ÊÇÔ½ÈÝÒ×ÎóÅÐ£¬
+  16                                                     //½¨ÒéÉèÖÃÖµÎª0x40-0x55,Ä¬ÈÏÖµÎª0x40
+  17                                                     
+  18          #define ASR_CLEAR_ADDR              0x05   //Çå³ýµôµç»º´æ²Ù×÷µØÖ·£¬Â¼ÈëÐÅÏ¢Ç°¾ùÒªÇå³ýÏÂ»º´æÇøÐÅÏ¢
+  19          
+  20          
+  21          #define ASR_KEY_FLAG                0x06   //ÓÃÓÚ°´¼üÄ£Ê½ÏÂ£¬ÉèÖÃÆô¶¯Ê¶±ðÄ£Ê½
+  22          
+  23          #define ASR_VOICE_FLAG              0x07   //ÓÃÓÚÉèÖÃÊÇ·ñ¿ªÆôÊ¶±ð½á¹ûÌáÊ¾Òô
+  24          
+  25          #define ASR_RESULT                  0x08  //Ê¶±ð½á¹û´æ·ÅµØÖ·
+  26          
+  27          #define ASR_BUZZER                  0x09 //·äÃùÆ÷¿ØÖÆÐ´1¿ªÆô£¬Ð´0¹Ø±Õ
+  28          
+  29          #define ASR_NUM_CLECK               0x0a //Â¼Èë´ÊÌõÊýÄ¿Ð£Ñé
+  30          
+  31          #define FIRMWARE_VERSION            0x0b //¶ÁÈ¡¹Ì¼þ°æ±¾
+  32          
+  33          #define ASR_BUSY                    0x0c//Ã¦ÏÐ±êÖ¾
+  34          
+  35          sbit scl=P2^1;       //I2C  Ê±ÖÓ 
+  36          sbit sda=P2^0;       //I2C  Êý¾Ý 
+  37          
+  38          sbit led1=P1^0;
+  39          sbit led2=P1^1;
+  40          sbit led3=P1^2;
+  41          sbit led4=P1^3;
+  42          sbit led5=P1^4;
+  43          bit ack;                 /*Ó¦´ð±êÖ¾Î»*/
+  44          unsigned char result = 0xff; 
+  45          
+  46          
+  47          
+  48          /*------------------------------------------------
+  49                            ÑÓÊ±º¯Êý
+  50          ------------------------------------------------*/
+  51          void delay(int i)
+  52          {
+C51 COMPILER V9.00   MAIN                                                                  02/01/2021 09:50:58 PAGE 2   
+
+  53   1        int j,k;
+  54   1        for(j=i;j>0;j--)
+  55   1          for(k=150;k>0;k--);
+  56   1      }
+  57          
+  58          
+  59          /*******************************************************************
+  60                               Æð¶¯×ÜÏßº¯Êý               
+  61          º¯ÊýÔ­ÐÍ: void  Start_I2c();  
+  62          ¹¦ÄÜ:     Æô¶¯I2C×ÜÏß,¼´·¢ËÍI2CÆðÊ¼Ìõ¼þ.  
+  63          ********************************************************************/
+  64          void Start_I2c()
+  65          {
+  66   1        sda=1;         /*·¢ËÍÆðÊ¼Ìõ¼þµÄÊý¾ÝÐÅºÅ*/
+  67   1        _nop_();
+  68   1        scl=1;
+  69   1        _nop_();        /*ÆðÊ¼Ìõ¼þ½¨Á¢Ê±¼ä´óÓÚ4.7us,ÑÓÊ±*/
+  70   1        _nop_();
+  71   1        _nop_();
+  72   1        _nop_();
+  73   1        _nop_();    
+  74   1        sda=0;         /*·¢ËÍÆðÊ¼ÐÅºÅ*/
+  75   1        _nop_();        /* ÆðÊ¼Ìõ¼þËø¶¨Ê±¼ä´óÓÚ4¦Ìs*/
+  76   1        _nop_();
+  77   1        _nop_();
+  78   1        _nop_();
+  79   1        _nop_();       
+  80   1        scl=0;       /*Ç¯×¡I2C×ÜÏß£¬×¼±¸·¢ËÍ»ò½ÓÊÕÊý¾Ý */
+  81   1        _nop_();
+  82   1        _nop_();
+  83   1      }
+  84          
+  85          /*******************************************************************
+  86                                ½áÊø×ÜÏßº¯Êý               
+  87          º¯ÊýÔ­ÐÍ: void  Stop_I2c();  
+  88          ¹¦ÄÜ:     ½áÊøI2C×ÜÏß,¼´·¢ËÍI2C½áÊøÌõ¼þ.  
+  89          ********************************************************************/
+  90          void Stop_I2c()
+  91          {
+  92   1        sda=0;      /*·¢ËÍ½áÊøÌõ¼þµÄÊý¾ÝÐÅºÅ*/
+  93   1        _nop_();       /*·¢ËÍ½áÊøÌõ¼þµÄÊ±ÖÓÐÅºÅ*/
+  94   1        scl=1;      /*½áÊøÌõ¼þ½¨Á¢Ê±¼ä´óÓÚ4¦Ìs*/
+  95   1        while(scl == 0){scl = 1;}
+  96   1        _nop_();
+  97   1        _nop_();
+  98   1        _nop_();
+  99   1        _nop_();
+ 100   1        _nop_();
+ 101   1        sda=1;      /*·¢ËÍI2C×ÜÏß½áÊøÐÅºÅ*/
+ 102   1        while(sda == 0){sda = 1;}
+ 103   1        _nop_();
+ 104   1        _nop_();
+ 105   1        _nop_();
+ 106   1        _nop_();
+ 107   1      }
+ 108          
+ 109          /*******************************************************************
+ 110                           ×Ö½ÚÊý¾Ý·¢ËÍº¯Êý               
+ 111          º¯ÊýÔ­ÐÍ: void  I2C_SendByte(UCHAR c);
+ 112          ¹¦ÄÜ:     ½«Êý¾Ýc·¢ËÍ³öÈ¥,¿ÉÒÔÊÇµØÖ·,Ò²¿ÉÒÔÊÇÊý¾Ý,·¢ÍêºóµÈ´ýÓ¦´ð,²¢¶Ô
+ 113                    ´Ë×´Ì¬Î»½øÐÐ²Ù×÷.(²»Ó¦´ð»ò·ÇÓ¦´ð¶¼Ê¹ack=0)     
+ 114                     ·¢ËÍÊý¾ÝÕý³££¬ack=1; ack=0±íÊ¾±»¿ØÆ÷ÎÞÓ¦´ð»òËð»µ¡£
+C51 COMPILER V9.00   MAIN                                                                  02/01/2021 09:50:58 PAGE 3   
+
+ 115          ********************************************************************/
+ 116          void  I2C_SendByte(unsigned char  c)
+ 117          {
+ 118   1       unsigned char  i;
+ 119   1       
+ 120   1       for(i=0;i<8;i++)  /*Òª´«ËÍµÄÊý¾Ý³¤¶ÈÎª8Î»*/
+ 121   1          {
+ 122   2           if((c<<i)&0x80)sda=1;   /*ÅÐ¶Ï·¢ËÍÎ»*/
+ 123   2             else  sda=0;                
+ 124   2           _nop_();
+ 125   2           scl=1;               /*ÖÃÊ±ÖÓÏßÎª¸ß£¬Í¨Öª±»¿ØÆ÷¿ªÊ¼½ÓÊÕÊý¾ÝÎ»*/
+ 126   2               while(scl == 0){scl = 1;}
+ 127   2      
+ 128   2            _nop_(); 
+ 129   2            _nop_();             /*±£Ö¤Ê±ÖÓ¸ßµçÆ½ÖÜÆÚ´óÓÚ4¦Ìs*/
+ 130   2            _nop_();
+ 131   2            _nop_();
+ 132   2            _nop_();         
+ 133   2           scl=0; 
+ 134   2          }
+ 135   1          _nop_();
+ 136   1          _nop_();
+ 137   1          _nop_();
+ 138   1          _nop_();
+ 139   1          sda=1;                /*8Î»·¢ËÍÍêºóÊÍ·ÅÊý¾ÝÏß£¬×¼±¸½ÓÊÕÓ¦´ðÎ»*/
+ 140   1          _nop_();
+ 141   1          _nop_();
+ 142   1              _nop_();
+ 143   1              _nop_();   
+ 144   1          scl=1;
+ 145   1              while(scl == 0){scl = 1;}
+ 146   1          _nop_();
+ 147   1          _nop_();
+ 148   1          _nop_();
+ 149   1          if(sda==1)ack=0;     
+ 150   1             else ack=1;        /*ÅÐ¶ÏÊÇ·ñ½ÓÊÕµ½Ó¦´ðÐÅºÅ*/
+ 151   1          scl=0;
+ 152   1          _nop_();
+ 153   1          _nop_();
+ 154   1      
+ 155   1      }
+ 156          
+ 157          /*******************************************************************
+ 158                           ×Ö½ÚÊý¾Ý½ÓÊÕº¯Êý               
+ 159          º¯ÊýÔ­ÐÍ: UCHAR  I2C_RcvByte();
+ 160          ¹¦ÄÜ:        ÓÃÀ´½ÓÊÕ´ÓÆ÷¼þ´«À´µÄÊý¾Ý,²¢ÅÐ¶Ï×ÜÏß´íÎó(²»·¢Ó¦´ðÐÅºÅ)£¬
+ 161                    ·¢ÍêºóÇëÓÃÓ¦´ðº¯ÊýÓ¦´ð´Ó»ú¡£  
+ 162          ********************************************************************/    
+ 163          unsigned char I2C_RcvByte()
+ 164          {
+ 165   1        unsigned char  retc=0,i=0; 
+ 166   1        sda=1;                     /*ÖÃÊý¾ÝÏßÎªÊäÈë·½Ê½*/
+ 167   1        for(i=0;i<8;i++)
+ 168   1            {
+ 169   2              _nop_();           
+ 170   2              scl=0;                  /*ÖÃÊ±ÖÓÏßÎªµÍ£¬×¼±¸½ÓÊÕÊý¾ÝÎ»*/
+ 171   2                      while(scl == 1){scl = 0;}
+ 172   2              _nop_();
+ 173   2              _nop_();                 /*Ê±ÖÓµÍµçÆ½ÖÜÆÚ´óÓÚ4.7¦Ìs*/
+ 174   2              _nop_();
+ 175   2              _nop_();
+ 176   2              _nop_();
+C51 COMPILER V9.00   MAIN                                                                  02/01/2021 09:50:58 PAGE 4   
+
+ 177   2              scl=1;                  /*ÖÃÊ±ÖÓÏßÎª¸ßÊ¹Êý¾ÝÏßÉÏÊý¾ÝÓÐÐ§*/
+ 178   2                      while(scl == 0){scl = 1;}
+ 179   2              _nop_();
+ 180   2              _nop_();
+ 181   2              retc=retc<<1;
+ 182   2              if(sda==1)retc=retc+1;  /*¶ÁÊý¾ÝÎ»,½ÓÊÕµÄÊý¾ÝÎ»·ÅÈëretcÖÐ */
+ 183   2              _nop_();
+ 184   2              _nop_(); 
+ 185   2            } 
+ 186   1        scl=0;    
+ 187   1         _nop_();
+ 188   1        _nop_();
+ 189   1        return(retc);
+ 190   1      }
+ 191          
+ 192          /********************************************************************
+ 193                               Ó¦´ð×Óº¯Êý
+ 194          º¯ÊýÔ­ÐÍ:  void Ack_I2c(bit a);
+ 195          ¹¦ÄÜ:      Ö÷¿ØÆ÷½øÐÐÓ¦´ðÐÅºÅ(¿ÉÒÔÊÇÓ¦´ð»ò·ÇÓ¦´ðÐÅºÅ£¬ÓÉÎ»²ÎÊýa¾ö¶¨)
+ 196          ********************************************************************/
+ 197          void Ack_I2c(bit a)
+ 198          {  
+ 199   1        if(a==0)sda=0;              /*ÔÚ´Ë·¢³öÓ¦´ð»ò·ÇÓ¦´ðÐÅºÅ */
+ 200   1        else sda=1;                             /*0Îª·¢³öÓ¦´ð£¬1Îª·ÇÓ¦´ðÐÅºÅ */
+ 201   1        _nop_();
+ 202   1        _nop_();
+ 203   1        _nop_();      
+ 204   1        scl=1;
+ 205   1        _nop_();
+ 206   1        _nop_();                    /*Ê±ÖÓµÍµçÆ½ÖÜÆÚ´óÓÚ4¦Ìs*/
+ 207   1        _nop_();
+ 208   1        _nop_();
+ 209   1        _nop_();  
+ 210   1        scl=0;                     /*ÇåÊ±ÖÓÏß£¬×¡I2C×ÜÏßÒÔ±ã¼ÌÐø½ÓÊÕ*/
+ 211   1        _nop_();
+ 212   1        _nop_();    
+ 213   1      }
+ 214          
+ 215          
+ 216          bit I2C_ByteWrite_alone(unsigned char date)
+ 217          {
+ 218   1        
+ 219   1          Start_I2c();                        //Æô¶¯×ÜÏß
+ 220   1              I2C_SendByte(I2C_ADDR);     //·¢ËÍÆ÷¼þµØÖ·
+ 221   1              if(ack==0)return(0);
+ 222   1              I2C_SendByte(date);    //·¢ËÍÊý¾Ý
+ 223   1              if(ack==0)return(0);
+ 224   1      
+ 225   1              Stop_I2c();               //½áÊø×ÜÏß
+ 226   1              
+ 227   1              return(1);
+ 228   1      
+ 229   1      }
+ 230          
+ 231           
+ 232          
+ 233          void I2C_ByteWrite(unsigned char reg_addr,unsigned char dat)
+ 234          {
+ 235   1               I2C_ByteWrite_alone(reg_addr);
+ 236   1               I2C_ByteWrite_alone(dat);
+ 237   1      } 
+ 238          
+C51 COMPILER V9.00   MAIN                                                                  02/01/2021 09:50:58 PAGE 5   
+
+ 239          
+ 240          
+ 241          unsigned char I2C_BufferRead(unsigned char date)
+ 242          {
+ 243   1              unsigned char dat;
+ 244   1              Start_I2c();                    //Æô¶¯×ÜÏß
+ 245   1              I2C_SendByte(I2C_ADDR);     //·¢ËÍÆ÷¼þµØÖ·
+ 246   1              if(ack==0)return(0);
+ 247   1              I2C_SendByte(date);    //·¢ËÍÆ÷¼þµØÖ·
+ 248   1              if(ack==0)return(0);
+ 249   1              Stop_I2c();
+ 250   1              delay(50);
+ 251   1      
+ 252   1              Start_I2c();                            //Æô¶¯×ÜÏß
+ 253   1              I2C_SendByte(I2C_ADDR+1);      //·¢ËÍÆ÷¼þµØÖ·
+ 254   1              if(ack==0)return(0);
+ 255   1                      delay(1);
+ 256   1              dat=I2C_RcvByte();          //¶ÁÈ¡Êý¾Ý
+ 257   1      
+ 258   1              Ack_I2c(1);           //·¢ËÍ·ÇÓ¦´ðÐÅºÅ
+ 259   1              Stop_I2c();           //½áÊø×ÜÏß
+ 260   1      
+ 261   1              return(dat);  
+ 262   1      }
+ 263          
+ 264          void AsrAddWords(unsigned char idNum,unsigned char * words)
+ 265          {
+ 266   1           int i = 0;
+ 267   1           unsigned char date_length = strlen(words)+2;
+ 268   1               unsigned char str_length = strlen(words);
+ 269   1               I2C_ByteWrite_alone(ASR_ADD_WORD_ADDR);           //·¢ËÍ¼Ä´æÆ÷µØÖ·
+ 270   1               I2C_ByteWrite_alone(date_length);                        //·¢ËÍÊý¾Ý³¤¶È
+ 271   1               I2C_ByteWrite_alone(idNum);
+ 272   1               for(i = 0;i<str_length;i++)
+ 273   1               {
+ 274   2                      I2C_ByteWrite_alone(words[i]);                     
+ 275   2               }
+ 276   1                I2C_ByteWrite_alone(0);
+ 277   1      
+ 278   1      
+ 279   1      }
+ 280          
+ 281          void RGB_Set(unsigned char R,unsigned char G,unsigned char B)
+ 282          {
+ 283   1               
+ 284   1               I2C_ByteWrite_alone(ASR_RGB_ADDR);
+ 285   1               I2C_ByteWrite_alone(R);
+ 286   1               I2C_ByteWrite_alone(G);
+ 287   1               I2C_ByteWrite_alone(B);
+ 288   1      }
+ 289          
+ 290          
+ 291          
+ 292          /*****************************
+ 293                 Ã¦ÏÐµÈ´ýÈ¡º¯Êý
+ 294          ******************************/
+ 295          void BusyWait(void)
+ 296          {
+ 297   1        
+ 298   1        unsigned char busy_flag = 0xff;
+ 299   1        while(busy_flag != 0)
+ 300   1        {
+C51 COMPILER V9.00   MAIN                                                                  02/01/2021 09:50:58 PAGE 6   
+
+ 301   2            busy_flag = I2C_BufferRead(ASR_BUSY);
+ 302   2            delay(500);
+ 303   2          } 
+ 304   1        
+ 305   1        }
+ 306                   
+ 307          
+ 308          void main()
+ 309          {
+ 310   1      
+ 311   1              unsigned char cleck = 0xff;
+ 312   1      #if 1
+ 313   1          I2C_ByteWrite(ASR_CLEAR_ADDR,0x40);//Çå³ýµôµç±£´æÇø,Â¼ÈëÇ°ÐèÒªÇå³ýµôµç±£´æÇø
+ 314   1              BusyWait();
+ 315   1              I2C_ByteWrite(ASR_MODE_ADDR,1);//ÉèÖÃÄ£Ê½Îª¿ÚÁîÄ£Ê½
+ 316   1              BusyWait();
+ 317   1              AsrAddWords(0,"xiao ya");
+ 318   1              BusyWait();     
+ 319   1              AsrAddWords(1,"hong deng");
+ 320   1              BusyWait();  
+ 321   1              AsrAddWords(2,"lv deng");
+ 322   1              BusyWait();
+ 323   1              AsrAddWords(3,"lan deng");
+ 324   1              BusyWait();
+ 325   1              AsrAddWords(4,"guan deng");
+ 326   1              BusyWait();
+ 327   1              AsrAddWords(5,"yi hao deng");
+ 328   1              BusyWait();
+ 329   1              AsrAddWords(6,"e hao deng");
+ 330   1              BusyWait();
+ 331   1              AsrAddWords(7,"san hao deng");
+ 332   1              BusyWait();
+ 333   1              AsrAddWords(8,"si hao deng");
+ 334   1              BusyWait();
+ 335   1              AsrAddWords(9,"wu hao deng");
+ 336   1              BusyWait();
+ 337   1        
+ 338   1           while(cleck != 10)
+ 339   1          {
+ 340   2            cleck = I2C_BufferRead(ASR_NUM_CLECK);
+ 341   2            delay(500);
+ 342   2            }
+ 343   1      #endif      
+ 344   1              I2C_ByteWrite(ASR_REC_GAIN,0x55);//ÉèÖÃÁéÃô¶È
+ 345   1              
+ 346   1      
+ 347   1              RGB_Set(255,255,255);
+ 348   1              I2C_ByteWrite(ASR_BUZZER,0x01);//¿ªÆô·äÃùÆ÷
+ 349   1              delay(1000); 
+ 350   1              I2C_ByteWrite(ASR_BUZZER,0x00);//¿ªÆô·äÃùÆ÷
+ 351   1              RGB_Set(0,0,0);
+ 352   1              
+ 353   1        while(1)
+ 354   1        {
+ 355   2              result = I2C_BufferRead(ASR_RESULT);
+ 356   2              if(result == 5)
+ 357   2              {
+ 358   3                      led1=0; 
+ 359   3              }
+ 360   2              else if(result == 6)
+ 361   2              {
+ 362   3                      led2 = 0;
+C51 COMPILER V9.00   MAIN                                                                  02/01/2021 09:50:58 PAGE 7   
+
+ 363   3              }
+ 364   2              else if(result == 7)
+ 365   2              {
+ 366   3                      led3 = 0;
+ 367   3              }
+ 368   2              else if(result == 8)
+ 369   2              {
+ 370   3                      led4 = 0;
+ 371   3              }
+ 372   2              else if(result == 9)
+ 373   2              {
+ 374   3                      led5 = 0;
+ 375   3              }
+ 376   2              else if(result == 4)
+ 377   2              {
+ 378   3                      led1 = 1;
+ 379   3                      led2 = 1;
+ 380   3                      led3 = 1;
+ 381   3                      led4 = 1;
+ 382   3                      led5 = 1;
+ 383   3              }  
+ 384   2      
+ 385   2              delay(500);
+ 386   2        }
+ 387   1      }
+ 388          
+ 389          
+ 390          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    783    ----
+   CONSTANT SIZE    =    105    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1       8
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

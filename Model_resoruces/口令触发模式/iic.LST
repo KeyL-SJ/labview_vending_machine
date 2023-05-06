@@ -1,0 +1,352 @@
+C51 COMPILER V9.54   IIC                                                                   05/06/2022 11:54:21 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE IIC
+OBJECT MODULE PLACED IN iic.OBJ
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE iic.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          #include <iic.h>
+   2          
+   3          bit ack; /*应答标志位*/
+   4          
+   5          /*------------------------------------------------
+   6                            延时函数
+   7          ------------------------------------------------*/
+   8          void delay(int i)
+   9          {
+  10   1        int j, k;
+  11   1        for (j = i; j > 0; j--)
+  12   1          for (k = 150; k > 0; k--)
+  13   1            ;
+  14   1      }
+  15          
+  16          /*******************************************************************
+  17                               起动总线函数
+  18          函数原型: void  Start_I2c();
+  19          功能:     启动I2C总线,即发送I2C起始条件.
+  20          ********************************************************************/
+  21          void Start_I2c()
+  22          {
+  23   1        sda = 1; /*发送起始条件的数据信号*/
+  24   1        _nop_();
+  25   1        scl = 1;
+  26   1        _nop_(); /*起始条件建立时间大于4.7us,延时*/
+  27   1        _nop_();
+  28   1        _nop_();
+  29   1        _nop_();
+  30   1        _nop_();
+  31   1        sda = 0; /*发送起始信号*/
+  32   1        _nop_(); /* 起始条件锁定时间大于4μs*/
+  33   1        _nop_();
+  34   1        _nop_();
+  35   1        _nop_();
+  36   1        _nop_();
+  37   1        scl = 0; /*钳住I2C总线，准备发送或接收数据 */
+  38   1        _nop_();
+  39   1        _nop_();
+  40   1      }
+  41          
+  42          /*******************************************************************
+  43                                结束总线函数
+  44          函数原型: void  Stop_I2c();
+  45          功能:     结束I2C总线,即发送I2C结束条件.
+  46          ********************************************************************/
+  47          void Stop_I2c()
+  48          {
+  49   1        sda = 0; /*发送结束条件的数据信号*/
+  50   1        _nop_(); /*发送结束条件的时钟信号*/
+  51   1        scl = 1; /*结束条件建立时间大于4μs*/
+  52   1        while (scl == 0)
+  53   1        {
+  54   2          scl = 1;
+  55   2        }
+C51 COMPILER V9.54   IIC                                                                   05/06/2022 11:54:21 PAGE 2   
+
+  56   1        _nop_();
+  57   1        _nop_();
+  58   1        _nop_();
+  59   1        _nop_();
+  60   1        _nop_();
+  61   1        sda = 1; /*发送I2C总线结束信号*/
+  62   1        while (sda == 0)
+  63   1        {
+  64   2          sda = 1;
+  65   2        }
+  66   1        _nop_();
+  67   1        _nop_();
+  68   1        _nop_();
+  69   1        _nop_();
+  70   1      }
+  71          
+  72          /*******************************************************************
+  73                           字节数据发送函数
+  74          函数原型: void  I2C_SendByte(UCHAR c);
+  75          功能:     将数据c发送出去,可以是地址,也可以是数据,发完后等待应答,并对
+  76                    此状态位进行操作.(不应答或非应答都使ack=0)
+  77                     发送数据正常，ack=1; ack=0表示被控器无应答或损坏。
+  78          ********************************************************************/
+  79          void I2C_SendByte(unsigned char c)
+  80          {
+  81   1        unsigned char i;
+  82   1      
+  83   1        for (i = 0; i < 8; i++) /*要传送的数据长度为8位*/
+  84   1        {
+  85   2          if ((c << i) & 0x80)
+  86   2            sda = 1; /*判断发送位*/
+  87   2          else
+  88   2            sda = 0;
+  89   2          _nop_();
+  90   2          scl = 1; /*置时钟线为高，通知被控器开始接收数据位*/
+  91   2          while (scl == 0)
+  92   2          {
+  93   3            scl = 1;
+  94   3          }
+  95   2      
+  96   2          _nop_();
+  97   2          _nop_(); /*保证时钟高电平周期大于4μs*/
+  98   2          _nop_();
+  99   2          _nop_();
+ 100   2          _nop_();
+ 101   2          scl = 0;
+ 102   2        }
+ 103   1        _nop_();
+ 104   1        _nop_();
+ 105   1        _nop_();
+ 106   1        _nop_();
+ 107   1        sda = 1; /*8位发送完后释放数据线，准备接收应答位*/
+ 108   1        _nop_();
+ 109   1        _nop_();
+ 110   1        _nop_();
+ 111   1        _nop_();
+ 112   1        scl = 1;
+ 113   1        while (scl == 0)
+ 114   1        {
+ 115   2          scl = 1;
+ 116   2        }
+ 117   1        _nop_();
+C51 COMPILER V9.54   IIC                                                                   05/06/2022 11:54:21 PAGE 3   
+
+ 118   1        _nop_();
+ 119   1        _nop_();
+ 120   1        if (sda == 1)
+ 121   1          ack = 0;
+ 122   1        else
+ 123   1          ack = 1; /*判断是否接收到应答信号*/
+ 124   1        scl = 0;
+ 125   1        _nop_();
+ 126   1        _nop_();
+ 127   1      }
+ 128          
+ 129          /*******************************************************************
+ 130                           字节数据接收函数
+ 131          函数原型: UCHAR  I2C_RcvByte();
+ 132          功能:        用来接收从器件传来的数据,并判断总线错误(不发应答信号)，
+ 133                    发完后请用应答函数应答从机。
+ 134          ********************************************************************/
+ 135          unsigned char I2C_RcvByte()
+ 136          {
+ 137   1        unsigned char retc = 0, i = 0;
+ 138   1        sda = 1; /*置数据线为输入方式*/
+ 139   1        for (i = 0; i < 8; i++)
+ 140   1        {
+ 141   2          _nop_();
+ 142   2          scl = 0; /*置时钟线为低，准备接收数据位*/
+ 143   2          while (scl == 1)
+ 144   2          {
+ 145   3            scl = 0;
+ 146   3          }
+ 147   2          _nop_();
+ 148   2          _nop_(); /*时钟低电平周期大于4.7μs*/
+ 149   2          _nop_();
+ 150   2          _nop_();
+ 151   2          _nop_();
+ 152   2          scl = 1; /*置时钟线为高使数据线上数据有效*/
+ 153   2          while (scl == 0)
+ 154   2          {
+ 155   3            scl = 1;
+ 156   3          }
+ 157   2          _nop_();
+ 158   2          _nop_();
+ 159   2          retc = retc << 1;
+ 160   2          if (sda == 1)
+ 161   2            retc = retc + 1; /*读数据位,接收的数据位放入retc中 */
+ 162   2          _nop_();
+ 163   2          _nop_();
+ 164   2        }
+ 165   1        scl = 0;
+ 166   1        _nop_();
+ 167   1        _nop_();
+ 168   1        return (retc);
+ 169   1      }
+ 170          
+ 171          /********************************************************************
+ 172                               应答子函数
+ 173          函数原型:  void Ack_I2c(bit a);
+ 174          功能:      主控器进行应答信号(可以是应答或非应答信号，由位参数a决定)
+ 175          ********************************************************************/
+ 176          void Ack_I2c(bit a)
+ 177          {
+ 178   1        if (a == 0)
+ 179   1          sda = 0; /*在此发出应答或非应答信号 */
+C51 COMPILER V9.54   IIC                                                                   05/06/2022 11:54:21 PAGE 4   
+
+ 180   1        else
+ 181   1          sda = 1; /*0为发出应答，1为非应答信号 */
+ 182   1        _nop_();
+ 183   1        _nop_();
+ 184   1        _nop_();
+ 185   1        scl = 1;
+ 186   1        _nop_();
+ 187   1        _nop_(); /*时钟低电平周期大于4μs*/
+ 188   1        _nop_();
+ 189   1        _nop_();
+ 190   1        _nop_();
+ 191   1        scl = 0; /*清时钟线，住I2C总线以便继续接收*/
+ 192   1        _nop_();
+ 193   1        _nop_();
+ 194   1      }
+ 195          
+ 196          bit I2C_ByteWrite_alone(unsigned char date)
+ 197          {
+ 198   1      
+ 199   1        Start_I2c();            //启动总线
+ 200   1        I2C_SendByte(I2C_ADDR_Recognition); //发送器件地址
+ 201   1        if (ack == 0)
+ 202   1          return (0);
+ 203   1        I2C_SendByte(date); //发送数据
+ 204   1        if (ack == 0)
+ 205   1          return (0);
+ 206   1      
+ 207   1        Stop_I2c(); //结束总线
+ 208   1      
+ 209   1        return (1);
+ 210   1      }
+ 211          
+ 212          void I2C_ByteWrite(unsigned char reg_addr, unsigned char dat)
+ 213          {
+ 214   1        I2C_ByteWrite_alone(reg_addr);
+ 215   1        I2C_ByteWrite_alone(dat);
+ 216   1      }
+ 217          
+ 218          unsigned char I2C_BufferRead(unsigned char date)
+ 219          {
+ 220   1        unsigned char dat;
+ 221   1        Start_I2c();            //启动总线
+ 222   1        I2C_SendByte(I2C_ADDR_Recognition); //发送器件地址
+ 223   1        if (ack == 0)
+ 224   1          return (0);
+ 225   1        I2C_SendByte(date); //发送器件地址
+ 226   1        if (ack == 0)
+ 227   1          return (0);
+ 228   1        Stop_I2c();
+ 229   1        delay(50);
+ 230   1      
+ 231   1        Start_I2c();                //启动总线
+ 232   1        I2C_SendByte(I2C_ADDR_Recognition + 1); //发送器件地址
+ 233   1        if (ack == 0)
+ 234   1          return (0);
+ 235   1        delay(1);
+ 236   1        dat = I2C_RcvByte(); //读取数据
+ 237   1      
+ 238   1        Ack_I2c(1); //发送非应答信号
+ 239   1        Stop_I2c(); //结束总线
+ 240   1      
+ 241   1        return (dat);
+C51 COMPILER V9.54   IIC                                                                   05/06/2022 11:54:21 PAGE 5   
+
+ 242   1      }
+ 243          
+ 244          void AsrAddWords(unsigned char idNum, unsigned char *words)
+ 245          {
+ 246   1        int i = 0;
+ 247   1        unsigned char date_length = strlen(words) + 2;
+ 248   1        unsigned char str_length = strlen(words);
+ 249   1        I2C_ByteWrite_alone(ASR_ADD_WORD_ADDR); //发送寄存器地址
+ 250   1        I2C_ByteWrite_alone(date_length);       //发送数据长度
+ 251   1        I2C_ByteWrite_alone(idNum);
+ 252   1        for (i = 0; i < str_length; i++)
+ 253   1        {
+ 254   2          I2C_ByteWrite_alone(words[i]);
+ 255   2        }
+ 256   1        I2C_ByteWrite_alone(0);
+ 257   1      }
+ 258          
+ 259          void RGB_Set(unsigned char R, unsigned char G, unsigned char B)
+ 260          {
+ 261   1      
+ 262   1        I2C_ByteWrite_alone(ASR_RGB_ADDR);
+ 263   1        I2C_ByteWrite_alone(R);
+ 264   1        I2C_ByteWrite_alone(G);
+ 265   1        I2C_ByteWrite_alone(B);
+ 266   1      }
+ 267          
+ 268          /*****************************
+ 269                 忙闲等待取函数
+ 270          ******************************/
+ 271          void BusyWait(void)
+ 272          {
+ 273   1      
+ 274   1        unsigned char busy_flag = 0xff;
+ 275   1        while (busy_flag != 0)
+ 276   1        {
+ 277   2          busy_flag = I2C_BufferRead(ASR_BUSY);
+ 278   2          delay(500);
+ 279   2        }
+ 280   1      }
+ 281          //语音识别初始化函数
+ 282          void Recognition_Init(void)
+ 283          {
+ 284   1      
+ 285   1        unsigned char cleck = 0xff;
+ 286   1      #if 1
+ 287   1        I2C_ByteWrite(ASR_CLEAR_ADDR, 0x40); //清除掉电保存区,录入前需要清除掉电保存区
+ 288   1        BusyWait();
+ 289   1        I2C_ByteWrite(ASR_MODE_ADDR, 1); //设置模式为口令模式
+ 290   1        BusyWait();
+ 291   1        AsrAddWords(0, "xiao ya");
+ 292   1        BusyWait();
+ 293   1        AsrAddWords(1, "yi hao men");
+ 294   1        BusyWait();
+ 295   1        AsrAddWords(2, "er hao men");
+ 296   1        BusyWait();
+ 297   1        AsrAddWords(3, "san hao men");
+ 298   1        BusyWait();
+ 299   1        AsrAddWords(4, "si hao men");
+ 300   1        BusyWait();
+ 301   1        AsrAddWords(5, "wu hao men");
+ 302   1        BusyWait();
+ 303   1        AsrAddWords(6, "liu hao men");
+C51 COMPILER V9.54   IIC                                                                   05/06/2022 11:54:21 PAGE 6   
+
+ 304   1        BusyWait();
+ 305   1      
+ 306   1        while (cleck != 10)
+ 307   1        {
+ 308   2          cleck = I2C_BufferRead(ASR_NUM_CLECK);
+ 309   2          delay(500);
+ 310   2        }
+ 311   1      #endif
+ 312   1        I2C_ByteWrite(ASR_REC_GAIN, 0x55); //设置灵敏度
+ 313   1      
+ 314   1        RGB_Set(255, 255, 255);
+ 315   1        I2C_ByteWrite(ASR_BUZZER, 0x01); //开启蜂鸣器
+ 316   1        delay(1000);
+ 317   1        I2C_ByteWrite(ASR_BUZZER, 0x00); //开启蜂鸣器
+ 318   1        RGB_Set(0, 0, 0);
+ 319   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    673    ----
+   CONSTANT SIZE    =     76    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       8
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

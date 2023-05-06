@@ -1,0 +1,203 @@
+C51 COMPILER V9.54   MAIN                                                                  04/20/2022 13:33:14 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\项目-基于自制核心板2\driver) DEBU
+                    -G OBJECTEXTEND PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <iic.h>
+   2          #include <key.h>
+   3          sbit door_feedback = P1^7;
+   4          
+   5          void Key_Pros(void);
+   6          void opendoor_Pros(void);
+   7          void feedback_Pros(void);
+   8          
+   9          unsigned char Key_Value, Key_Old, Key_Down;
+  10          
+  11          void main(void)
+  12          {
+  13   1        while(1)
+  14   1        {
+  15   2          Key_Pros();
+  16   2          opendoor_Pros();
+  17   2          feedback_Pros();
+  18   2        }
+  19   1      }
+  20          
+  21          void Delay500ms() //@11.0592MHz
+  22          {
+  23   1        unsigned char i, j, k;
+  24   1      
+  25   1        _nop_();
+  26   1        _nop_();
+  27   1        i = 22;
+  28   1        j = 3;
+  29   1        k = 227;
+  30   1        do
+  31   1        {
+  32   2          do
+  33   2          {
+  34   3            while (--k)
+  35   3              ;
+  36   3          } while (--j);
+  37   2        } while (--i);
+  38   1      }
+  39          
+  40          void Key_Pros(void)
+  41          {
+  42   1        Key_Value = Key_Read_BTN();
+  43   1        Key_Down = Key_Value & (Key_Old ^ Key_Value);
+  44   1        Key_Old = Key_Value;
+  45   1      
+  46   1        switch (Key_Down)
+  47   1        {
+  48   2        case 1:
+  49   2          //点亮指示灯
+  50   2          P1 = 0xfe;
+  51   2          //语音播报
+  52   2          User_Speech_Text("您选择了一号商品");
+  53   2          break;
+  54   2        case 2:
+C51 COMPILER V9.54   MAIN                                                                  04/20/2022 13:33:14 PAGE 2   
+
+  55   2          //点亮指示灯
+  56   2          P1 = 0xfd;
+  57   2          //语音播报
+  58   2          User_Speech_Text("您选择了二号商品");
+  59   2          break;
+  60   2        case 3:
+  61   2          //点亮指示灯
+  62   2          P1 = 0xfb;
+  63   2          //语音播报
+  64   2          User_Speech_Text("您选择了叁号商品");
+  65   2          break;
+  66   2        case 4:
+  67   2          //点亮指示灯
+  68   2          P1 = 0xf7;
+  69   2          //语音播报
+  70   2          User_Speech_Text("您选择了四号商品");
+  71   2          break;
+  72   2        case 5:
+  73   2          //点亮指示灯
+  74   2          P1 = 0xef;
+  75   2          //语音播报
+  76   2          User_Speech_Text("您选择了五号商品");
+  77   2          break;
+  78   2        case 6:
+  79   2          //点亮指示灯
+  80   2          P1 = 0xdf;
+  81   2          //语音播报
+  82   2          User_Speech_Text("您选择了六号商品");
+  83   2          break;
+  84   2        default:
+  85   2          lock1 = lock2 = lock3 = lock4 = lock5 = lock6 = 0;
+  86   2        }
+  87   1      }
+  88          
+  89          void opendoor_Pros(void)
+  90          {
+  91   1          switch (Key_Down)
+  92   1          {
+  93   2          case 1:
+  94   2            //打开门锁
+  95   2            lock1 = 1;
+  96   2            Delay500ms();
+  97   2            //语音播报
+  98   2            User_Speech_Text("一号门锁已打开，请取走商品");\
+  99   2            door_feedback = 1;
+ 100   2            break;
+ 101   2          case 2:
+ 102   2            //打开门锁
+ 103   2            lock2 = 1;
+ 104   2            Delay500ms();
+ 105   2            //语音播报
+ 106   2            User_Speech_Text("二号门锁已打开，请取走商品");
+ 107   2          feedback_Pros();
+ 108   2            break;
+ 109   2          case 3:
+ 110   2            //打开门锁
+ 111   2            lock3 = 1;
+ 112   2            Delay500ms();
+ 113   2            //语音播报
+ 114   2            User_Speech_Text("叁号门锁已打开，请取走商品");
+ 115   2            break;
+ 116   2          case 4:
+C51 COMPILER V9.54   MAIN                                                                  04/20/2022 13:33:14 PAGE 3   
+
+ 117   2            //打开门锁
+ 118   2            lock4 = 1;
+ 119   2            Delay500ms();
+ 120   2            //语音播报
+ 121   2            User_Speech_Text("四号门锁已打开，请取走商品");
+ 122   2            break;
+ 123   2          case 5:
+ 124   2            //打开门锁
+ 125   2            lock5 = 1;
+ 126   2            Delay500ms();
+ 127   2            //语音播报
+ 128   2            User_Speech_Text("五号门锁已打开，请取走商品");
+ 129   2            break;
+ 130   2          case 6:
+ 131   2            //打开门锁
+ 132   2            lock6 = 1;
+ 133   2            Delay500ms();
+ 134   2            //语音播报
+ 135   2            User_Speech_Text("六号门锁已打开，请取走商品");
+ 136   2            break;
+ 137   2          }
+ 138   1      }
+ 139          
+ 140          void feedback_Pros(void)
+ 141          {
+ 142   1        if(door_feedback == 1)
+ 143   1        {
+ 144   2          // switch (Uart_Buf_Index)
+ 145   2          // {
+ 146   2          // case 1:
+ 147   2          //  User_Speech_Text("一号门未关闭");
+ 148   2          //  break;
+ 149   2          // case 2:
+ 150   2          //  User_Speech_Text("二号门未关闭");
+ 151   2          //  break;
+ 152   2          // case 3:
+ 153   2          //  User_Speech_Text("三号门未关闭");
+ 154   2          //  break;
+ 155   2          // case 4:
+ 156   2          //  User_Speech_Text("四号门未关闭");
+ 157   2          //  break;
+ 158   2          // case 5:
+ 159   2          //  User_Speech_Text("五号门未关闭");
+ 160   2          //  break;
+ 161   2          // case 6:
+ 162   2          //  User_Speech_Text("六号门未关闭");
+ 163   2          //  break;
+ 164   2          // default:
+ 165   2          //  break;
+ 166   2          // }
+ 167   2          User_Speech_Text("取走商品后请关好门锁");
+ 168   2          Delay500ms();
+ 169   2        }
+ 170   1        else P1 = 0xff;
+ 171   1      }
+ 172          
+ 173          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    271    ----
+   CONSTANT SIZE    =    285    ----
+C51 COMPILER V9.54   MAIN                                                                  04/20/2022 13:33:14 PAGE 4   
+
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      3    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

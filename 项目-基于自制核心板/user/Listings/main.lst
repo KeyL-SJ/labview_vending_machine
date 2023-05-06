@@ -1,0 +1,377 @@
+C51 COMPILER V9.54   MAIN                                                                  05/06/2022 16:08:53 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\sys;..\driver) DEBUG OBJECTEXTEND
+                    - PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <usart.h>
+   2          #include <Timer.h>
+   3          #include <key.h>
+   4          #include <iic.h>
+   5          #include <stdio.h>
+   6          
+   7          sbit led_light = P1 ^ 6;
+   8          sbit door_feedback = P1 ^ 7;
+   9          
+  10          void Key_Pros(void);
+  11          void Timer_Pros(void);
+  12          void Usart_Pros(void);
+  13          void feedback_Pros(void);
+  14          void opendoor_Pros(void);
+  15          void Recognition_Pros(void);
+  16          
+  17          unsigned char Key_Value, Key_Old, Key_Down;
+  18          
+  19          unsigned char useTime[3] = {0, 0, 0};
+  20          
+  21          unsigned char buf;
+  22          unsigned char Uart_Buf[] = " ";
+  23          unsigned char Uart_Buf_Index;
+  24          
+  25          bit lock_open_close = 0;
+  26          
+  27          unsigned char recognition_result = 0xff;
+  28          
+  29          void Delay500ms() //@11.0592MHz
+  30          {
+  31   1        unsigned char i, j, k;
+  32   1      
+  33   1        _nop_();
+  34   1        _nop_();
+  35   1        i = 22;
+  36   1        j = 3;
+  37   1        k = 227;
+  38   1        do
+  39   1        {
+  40   2          do
+  41   2          {
+  42   3            while (--k)
+  43   3              ;
+  44   3          } while (--j);
+  45   2        } while (--i);
+  46   1      }
+  47          
+  48          void main(void)
+  49          {
+  50   1      //  speech_init(); //语音播报初始化
+  51   1        usart_init();  //串口通信初始化
+  52   1        Timer0Init();
+  53   1        Recognition_Init();
+  54   1        while (1)
+C51 COMPILER V9.54   MAIN                                                                  05/06/2022 16:08:53 PAGE 2   
+
+  55   1        {
+  56   2          Key_Pros();
+  57   2          opendoor_Pros();
+  58   2          feedback_Pros();
+  59   2          Recognition_Pros();
+  60   2        }
+  61   1      }
+  62          
+  63          void Usart(void) interrupt 4
+  64          {
+  65   1        if (RI)
+  66   1        {
+  67   2          RI = 0;
+  68   2          buf = SBUF; //把收到的信息从SBUF放到buf中。
+  69   2          ES = 0;   //暂时关闭串口中断
+  70   2      
+  71   2          switch (buf)
+  72   2          {
+  73   3          case 0x37:
+  74   3            led_light = 0;
+  75   3            lock_open_close = 1;
+  76   3            break;
+  77   3          }
+  78   2          ES = 1; //重新开启串口中断
+  79   2          SBUF = buf;
+  80   2          while (!TI)
+  81   2            ;
+  82   2          TI = 0;
+  83   2        }
+  84   1      }
+  85          
+  86          void Usart_Pros(void)
+  87          {
+  88   1        UART_send_string(Uart_Buf);
+  89   1      }
+  90          
+  91          //按键检测，按下对应按键，语音提示，并打开对应门锁
+  92          void Key_Pros(void)
+  93          {
+  94   1        Key_Value = Key_Read_BTN();
+  95   1        Key_Down = Key_Value & (Key_Old ^ Key_Value);
+  96   1        Key_Old = Key_Value;
+  97   1      
+  98   1        switch (Key_Down)
+  99   1        {
+ 100   2        case 1:
+ 101   2          //点亮指示灯
+ 102   2          P1 = 0xfe;
+ 103   2          //串口通信
+ 104   2          Uart_Buf_Index = 1;
+ 105   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 106   2          Usart_Pros();
+ 107   2          //语音播报
+ 108   2          User_Speech_Text("您选择了一号商品");
+ 109   2          break;
+ 110   2        case 2:
+ 111   2          //点亮指示灯
+ 112   2          P1 = 0xfd;
+ 113   2          //串口通信
+ 114   2          Uart_Buf_Index = 2;
+ 115   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 116   2          Usart_Pros();
+C51 COMPILER V9.54   MAIN                                                                  05/06/2022 16:08:53 PAGE 3   
+
+ 117   2          //语音播报
+ 118   2          User_Speech_Text("您选择了二号商品");
+ 119   2          break;
+ 120   2        case 3:
+ 121   2          //点亮指示灯
+ 122   2          P1 = 0xfb;
+ 123   2          //串口通信
+ 124   2          Uart_Buf_Index = 3;
+ 125   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 126   2          Usart_Pros();
+ 127   2          //语音播报
+ 128   2          User_Speech_Text("您选择了叁号商品");
+ 129   2          break;
+ 130   2        case 4:
+ 131   2          //点亮指示灯
+ 132   2          P1 = 0xf7;
+ 133   2          //串口通信
+ 134   2          Uart_Buf_Index = 4;
+ 135   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 136   2          Usart_Pros();
+ 137   2          //语音播报
+ 138   2          User_Speech_Text("您选择了四号商品");
+ 139   2          break;
+ 140   2        case 5:
+ 141   2          //点亮指示灯
+ 142   2          P1 = 0xef;
+ 143   2          //串口通信
+ 144   2          Uart_Buf_Index = 5;
+ 145   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 146   2          Usart_Pros();
+ 147   2          //语音播报
+ 148   2          User_Speech_Text("您选择了五号商品");
+ 149   2          break;
+ 150   2        case 6:
+ 151   2          //点亮指示灯
+ 152   2          P1 = 0xdf;
+ 153   2          //串口通信
+ 154   2          Uart_Buf_Index = 6;
+ 155   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 156   2          Usart_Pros();
+ 157   2          //语音播报
+ 158   2          User_Speech_Text("您选择了六号商品");
+ 159   2          break;
+ 160   2        default:
+ 161   2          lock1 = lock2 = lock3 = lock4 = lock5 = lock6 = 0;
+ 162   2        }
+ 163   1      }
+ 164          void opendoor_Pros(void)
+ 165          {
+ 166   1        if (lock_open_close == 1)
+ 167   1        {
+ 168   2          switch (Uart_Buf_Index)
+ 169   2          {
+ 170   3          case 1:
+ 171   3            //打开门锁
+ 172   3            lock1 = 1;
+ 173   3            while (!door_feedback)
+ 174   3              ;
+ 175   3            //语音播报
+ 176   3            User_Speech_Text("一号门锁已打开，请取走商品");
+ 177   3            Delay500ms();
+ 178   3            feedback_Pros();
+C51 COMPILER V9.54   MAIN                                                                  05/06/2022 16:08:53 PAGE 4   
+
+ 179   3            break;
+ 180   3          case 2:
+ 181   3            //打开门锁
+ 182   3            lock2 = 1;
+ 183   3            while (!door_feedback)
+ 184   3              ;
+ 185   3            //语音播报
+ 186   3            User_Speech_Text("二号门锁已打开，请取走商品");
+ 187   3            Delay500ms();
+ 188   3            feedback_Pros();
+ 189   3            break;
+ 190   3          case 3:
+ 191   3            //打开门锁
+ 192   3            lock3 = 1;
+ 193   3            while (!door_feedback)
+ 194   3              ;
+ 195   3            //语音播报
+ 196   3            User_Speech_Text("叁号门锁已打开，请取走商品");
+ 197   3            feedback_Pros();
+ 198   3            break;
+ 199   3          case 4:
+ 200   3            //打开门锁
+ 201   3            lock4 = 1;
+ 202   3            while (!door_feedback)
+ 203   3              ;
+ 204   3            //语音播报
+ 205   3            User_Speech_Text("四号门锁已打开，请取走商品");
+ 206   3            Delay500ms();
+ 207   3            feedback_Pros();
+ 208   3            break;
+ 209   3          case 5:
+ 210   3            //打开门锁
+ 211   3            lock5 = 1;
+ 212   3            while (!door_feedback)
+ 213   3              ;
+ 214   3            //语音播报
+ 215   3            User_Speech_Text("五号门锁已打开，请取走商品");
+ 216   3            Delay500ms();
+ 217   3            feedback_Pros();
+ 218   3            break;
+ 219   3          case 6:
+ 220   3            //打开门锁
+ 221   3            lock6 = 1;
+ 222   3            while (!door_feedback)
+ 223   3              ;
+ 224   3            //语音播报
+ 225   3            User_Speech_Text("六号门锁已打开，请取走商品");
+ 226   3            Delay500ms();
+ 227   3            feedback_Pros();
+ 228   3            break;
+ 229   3          }
+ 230   2          lock_open_close = 0;
+ 231   2        }
+ 232   1      }
+ 233          
+ 234          void feedback_Pros(void)
+ 235          {
+ 236   1        if (door_feedback == 1)
+ 237   1        {
+ 238   2          switch (Uart_Buf_Index)
+ 239   2          {
+ 240   3          case 1:
+C51 COMPILER V9.54   MAIN                                                                  05/06/2022 16:08:53 PAGE 5   
+
+ 241   3            User_Speech_Text("一号门未关闭");
+ 242   3            break;
+ 243   3          case 2:
+ 244   3            User_Speech_Text("二号门未关闭");
+ 245   3            break;
+ 246   3          case 3:
+ 247   3            User_Speech_Text("三号门未关闭");
+ 248   3            break;
+ 249   3          case 4:
+ 250   3            User_Speech_Text("四号门未关闭");
+ 251   3            break;
+ 252   3          case 5:
+ 253   3            User_Speech_Text("五号门未关闭");
+ 254   3            break;
+ 255   3          case 6:
+ 256   3            User_Speech_Text("六号门未关闭");
+ 257   3            break;
+ 258   3          default:
+ 259   3            break;
+ 260   3          }
+ 261   2          Delay500ms();
+ 262   2        }
+ 263   1        else
+ 264   1          P1 = 0xff;
+ 265   1      }
+ 266          
+ 267          void Recognition_Pros(void)
+ 268          {
+ 269   1        recognition_result = I2C_BufferRead(ASR_RESULT);
+ 270   1        switch (recognition_result)
+ 271   1        {
+ 272   2        case 0: //小亚
+ 273   2          User_Speech_Text("有什么可以帮您");
+ 274   2          break;
+ 275   2        case 1: //一号门
+ 276   2          P1 = 0xfe;
+ 277   2          //串口通信
+ 278   2          Uart_Buf_Index = 1;
+ 279   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 280   2          Usart_Pros();
+ 281   2          //语音播报
+ 282   2          User_Speech_Text("您选择了一号商品");
+ 283   2          break;
+ 284   2        case 2:
+ 285   2          P1 = 0xfd;
+ 286   2          //串口通信
+ 287   2          Uart_Buf_Index = 2;
+ 288   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 289   2          Usart_Pros();
+ 290   2          //语音播报
+ 291   2          User_Speech_Text("您选择了二号商品");
+ 292   2          break;
+ 293   2        case 3:
+ 294   2          P1 = 0xfb;
+ 295   2          //串口通信
+ 296   2          Uart_Buf_Index = 3;
+ 297   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 298   2          Usart_Pros();
+ 299   2          //语音播报
+ 300   2          User_Speech_Text("您选择了叁号商品");
+ 301   2          break;
+ 302   2        case 4:
+C51 COMPILER V9.54   MAIN                                                                  05/06/2022 16:08:53 PAGE 6   
+
+ 303   2          P1 = 0xf7;
+ 304   2          //串口通信
+ 305   2          Uart_Buf_Index = 4;
+ 306   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 307   2          Usart_Pros();
+ 308   2          //语音播报
+ 309   2          User_Speech_Text("您选择了四号商品");
+ 310   2          break;
+ 311   2        case 5:
+ 312   2          P1 = 0xef;
+ 313   2          //串口通信
+ 314   2          Uart_Buf_Index = 5;
+ 315   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 316   2          Usart_Pros();
+ 317   2          //语音播报
+ 318   2          User_Speech_Text("您选择了五号商品");
+ 319   2          break;
+ 320   2        case 6:
+ 321   2          P1 = 0xdf;
+ 322   2          //串口通信
+ 323   2          Uart_Buf_Index = 6;
+ 324   2          sprintf(Uart_Buf, "%d", (unsigned int)Uart_Buf_Index);
+ 325   2          Usart_Pros();
+ 326   2          //语音播报
+ 327   2          User_Speech_Text("您选择了六号商品");
+ 328   2          break;
+ 329   2        }
+ 330   1      }
+ 331          
+ 332          //早上7点灭灯，晚上18点开灯
+ 333          void Timer_Pros(void)
+ 334          {
+ 335   1        if (useTime[0] == 7 && useTime[1] == 0 && useTime[2] == 0)
+ 336   1        {
+ 337   2          led_light = 0; //灭灯
+ 338   2        }
+ 339   1        if (useTime[0] == 18 && useTime[1] == 0 && useTime[2] == 0)
+ 340   1        {
+ 341   2          led_light = 1; //开灯
+ 342   2        }
+ 343   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    940    ----
+   CONSTANT SIZE    =    359    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     11    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
