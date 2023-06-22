@@ -1,0 +1,2 @@
+# labview_vending_machine
+基于labview的自动售卖机
